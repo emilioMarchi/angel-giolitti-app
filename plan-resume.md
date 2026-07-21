@@ -2,7 +2,7 @@
 
 Este documento sirve como punto de partida y contexto inmediato para cualquier agente de IA o desarrollador que retome el proyecto. Contiene el estado actual, especificaciones del stack y los siguientes pasos a seguir.
 
-**Última actualización:** 21 de Julio de 2026, 13:15hs (ART)
+**Última actualización:** 21 de Julio de 2026, 15:20hs (ART)
 
 ---
 
@@ -41,15 +41,15 @@ Este documento sirve como punto de partida y contexto inmediato para cualquier a
 * *Nota:* `SUPABASE_SERVICE_ROLE_KEY` sigue como placeholder.
 
 ### ✅ ETAPA 2: Sistema de Diseño + Reproductor Global — COMPLETADA
-* **Tema visual:** Oscuro premium nativo con acentos dorados definido en `src/app/globals.css`.
-* **Store Zustand:** `src/store/usePlayerStore.ts` — estado completo del reproductor (track, queue, play/pause, volumen, progreso, etc.) con persistencia de volumen en localStorage.
-* **GlobalAudioPlayer:** `src/components/GlobalAudioPlayer.tsx` — barra inferior fija con glassmorphism, controles, barra de progreso seekable, volumen, info del track. Se oculta si no hay track cargado.
-* **Navbar:** `src/components/Navbar.tsx` — barra superior fija con glassmorphism, links de navegación (Inicio, Música, Proyectos, Eventos, Galería, Bio), detección de ruta activa, menú hamburguesa móvil.
-* **Layout raíz:** `src/app/layout.tsx` integra `<Navbar />` + `{children}` + `<GlobalAudioPlayer />`.
+* **Tema visual:** Oscuro premium nativo con acentos turquesa (`#14b8a6`) estilo Spotify.
+* **Layout SPA:** CSS Grid implementado en `src/app/globals.css` (Sidebar izq, TopBar arriba, main al centro, y Player abajo).
+* **Store Zustand:** `src/store/usePlayerStore.ts` — estado completo del reproductor (track, queue, play/pause, volumen, progreso) persistente.
+* **GlobalAudioPlayer:** `src/components/GlobalAudioPlayer.tsx` — barra inferior con controles, progreso seekable, volumen e info del track.
+* **Navegación:** `Sidebar` y `TopBar` desarrollados y funcionales.
 
 ### ⏳ ETAPA 3: Módulos Públicos (Frontend SPA) — EN PROGRESO
-* **Home (`/`):** Estructura base creada en `src/app/page.tsx` con hero section (orbes luminosos, CTAs), sección de lanzamientos destacados (3 cards placeholder) y próximas fechas (3 eventos placeholder). **Falta conectar a Supabase.**
-* **Música (`/musica`):** Pendiente.
+* **Home (`/`):** **[COMPLETADO]** Creado como un "Perfil de Artista" idéntico a Spotify (Hero grande con gradient, avatar, tracks destacados con ecualizador animado, barra de botones integradas).
+* **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles (orden cronológico) más sección "Playlists del Artista". Permite expandir cada disco en la misma vista (SPA pura) para reproducir directo con Zustand. (Incluye fix `supabase.ts` para despliegue sin fallos SSR en Vercel).
 * **Proyectos (`/proyectos`):** Pendiente.
 * **Eventos (`/eventos`):** Pendiente.
 * **Galería (`/galeria`):** Pendiente.
@@ -95,22 +95,19 @@ angel-giolitti/
 
 ## 🚀 5. PRÓXIMO PASO INMEDIATO (DÓNDE RETOMAR)
 
-**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.2](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
+**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.3](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
 
 ### Para el siguiente agente:
 
-1. **Verificar que la app compila:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debería verse la home con tema oscuro, navbar y el hero section. El reproductor de audio no se mostrará hasta que se cargue un track.
-
-2. **Continuar con la Etapa 3 — Módulos Públicos:**
-   * **Paso 3.2: Módulo Música (`/musica`):** Crear `src/app/musica/page.tsx` con catálogo de álbumes desde Supabase, y `src/app/musica/albumes/[id]/page.tsx` con detalle del álbum y lista de tracks con botones de reproducción que interactúen con el `usePlayerStore`.
-   * **Paso 3.3: Módulo Proyectos (`/proyectos`):** Grid de proyectos audiovisuales con embed de YouTube/Vimeo y auto-pausa del audio global.
-   * **Paso 3.4: Módulo Eventos (`/eventos`):** Listado cronológico con mapa de Google Maps.
-   * **Paso 3.5: Módulo Galería (`/galeria`):** Álbumes fotográficos con lightbox.
-   * **Paso 3.6: Módulo Bio (`/bio`):** Biografía + dossier PDF descargable.
-
-3. **Conectar Home a Supabase:** Reemplazar los placeholders en `src/app/page.tsx` con queries reales a las tablas `albums` y `events`.
+1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la home como un perfil de Spotify.
+2. **Nuevos módulos por abordar:**
+   * **Paso 3.3: Módulo Proyectos (`/proyectos`):** Grid de proyectos audiovisuales con embebido de YouTube/Vimeo. Debe pausar el `usePlayerStore` automáticamente al darle play a un video (para no superponer audio).
+   * **Paso 3.4: Módulo Eventos (`/eventos`):** Listado cronológico, visualización elegante de fechas pasadas y futuras.
+   * **Paso 3.5: Módulo Galería (`/galeria`):** UI para mostrar fotos y álbumes (idealmente con componente lightbox o modal).
+   * **Paso 3.6: Módulo Bio (`/bio`):** Biografía e información de prensa.
+3. (Opcional): Si el Frontend público está muy avanzado, comenzar con la **Etapa 4 (Panel Admin `/admin`)** para dotar a la plataforma de CRUD real a la DB Supabase.
 
 ### Archivos de referencia obligatorios:
 * Leer [base-proyect.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/base-proyect.md) para las especificaciones de cada módulo.
-* Leer [schema.sql](file:///D:/Emi/OVNI/proyectos/angel-giolitti/schema.sql) para la estructura de tablas.
-* Leer [AGENTS.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/AGENTS.md) antes de escribir código Next.js (puede haber breaking changes).
+* Leer [schema.sql](file:///D:/Emi/OVNI/proyectos/angel-giolitti/schema.sql) para la estructura de tablas (`projects`, `events`, etc.).
+* Leer [AGENTS.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/AGENTS.md) antes de escribir código Next.js.

@@ -99,9 +99,9 @@ flowchart TD
 **Objetivo:** Construir la cáscara del sitio, el tema visual oscuro/premium y el reproductor de audio persistente e ininterrumpido.
 
 * **[x] Paso 2.1: Sistema de Diseño & Tokens Visuales (Completado)**
-  * Paleta de colores definida en `src/app/globals.css`: tema oscuro nativo (carbón azulado `oklch(0.12 0.015 260)`) con acentos dorados (`oklch(0.78 0.12 85)`) estilo Spotify premium.
-  * Variables CSS personalizadas para background, card, primary (dorado), secondary, muted, accent, border, sidebar.
-  * Componente base `Button` instalado vía shadcn/ui con variantes default, outline, ghost, destructive y link.
+  * Paleta de colores definida en `src/app/globals.css`: tema oscuro nativo con acentos turquesa (identidad Ángel Giolitti, `#14b8a6`) estilo Spotify premium.
+  * Diseño basado en CSS Grid (`spotify-layout`) con `Sidebar.tsx` a la izquierda, contenido principal en el centro y reproductor en la parte inferior.
+  * Componente base `Button` instalado vía shadcn/ui.
 * **[x] Paso 2.2: Store Global de Audio (`usePlayerStore`) (Completado)**
   * Implementado en `src/store/usePlayerStore.ts` con Zustand + middleware `persist`.
   * Estado: `currentTrack`, `isPlaying`, `queue`, `currentIndex`, `volume`, `isMuted`, `progress`, `duration`.
@@ -131,14 +131,16 @@ flowchart TD
 ### 🔹 ETAPA 3: Desarrollo de Rutas y Módulos Públicos (Frontend SPA) (EN PROGRESO ⏳)
 **Objetivo:** Implementar todas las páginas públicas del sitio web con navegación fluida sin cortes de audio.
 
-* **[/] Paso 3.1: Vista Home (`/`) (Estructura base creada)**
-  * **[x] Hero Banner:** Título con gradientes y orbes luminosos animados, subtítulo "Músico · Compositor · Artista", CTAs "Escuchar Música" y "Ver Proyectos".
-  * **[x] Lanzamientos Destacados:** Grid de 3 cards placeholder con hover scale + glow dorado. *(Pendiente: conectar a Supabase `albums`).*
-  * **[x] Widget Próximas Fechas:** Lista de 3 eventos placeholder con badge de fecha y ubicación. *(Pendiente: conectar a Supabase `events`).*
-  * **[ ] Pendiente: Reemplazar placeholders con consultas reales a Supabase.
-* **Paso 3.2: Módulo Música (`/musica` y `/musica/albumes/[slug]`)**
-  * Catálogo filtrable por tipo (Álbumes, EPs, Singles).
-  * Vista detallada del disco: Portada HD, fecha, lista de canciones con número de track, duración, botón de reproducción individual, botón "Reproducir Álbum Completo" y contador de escuchas/likes.
+* **[x] Paso 3.1: Vista Home (`/`) - Perfil de Artista (Completado)**
+  * **Hero Banner:** Perfil de artista estilo Spotify, avatar grande, insignia de cuenta verificada, título "Ángel Giolitti" y métricas de oyentes/followers.
+  * **Barra de Acciones:** Botón de Play verde/turquesa flotante, Shuffle, Seguir y más opciones integradas.
+  * **Tracklist:** Lista popular o de últimos lanzamientos integrada directamente en el perfil con la animación del ecualizador cuando suena la canción.
+* **[x] Paso 3.2: Módulo Música (`/musica` y vistas detalladas) (Completado)**
+  * Catálogo filtrable por tipo (Álbumes, EPs, Singles) extraído directamente de Supabase (con fallback mockeado si no hay conexión).
+  * Ordenado dinámicamente por año de lanzamiento más reciente.
+  * Sección adicional de "Playlists del Artista" (curadas por el usuario).
+  * Vista detallada interactiva en la misma página de la SPA (sin recargas) que muestra portada HD, fecha, lista de canciones con número, duración y botón de reproducción. Se integra 100% con Zustand y no interrumpe el audio.
+  * Solucionado el bug de compilación de Supabase SSR usando placeholders para evitar cuelgues en Vercel durante `next build`.
 * **Paso 3.3: Módulo Proyectos Audiovisuales (`/proyectos` y `/proyectos/[slug]`)**
   * Grid de producciones audiovisuales y transmedia.
   * Ficha de proyecto: Reproductor de video embebido (YouTube/Vimeo API), sinopsis, créditos y galería de imágenes del proyecto.
