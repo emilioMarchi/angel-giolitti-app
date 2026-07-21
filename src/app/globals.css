@@ -1361,37 +1361,73 @@
   }
 
   .player-bar {
-    grid-template-columns: 1fr auto 1fr;
-    padding: 0 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    height: auto;
+    position: relative;
+    padding-bottom: 12px;
   }
 
   .player-track-info {
-    gap: 8px;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
   }
 
   .player-cover {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .player-track-text {
+    max-width: 150px;
+  }
+
+  .player-track-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .player-controls-center {
     max-width: unset;
-  }
-
-  .player-progress-row {
-    display: none;
+    flex-shrink: 0;
   }
 
   .player-controls-buttons {
-    gap: 4px;
+    gap: 16px;
   }
 
-  .player-control-btn {
+  /* Ocultar Shuffle y Repeat en mobile para ahorrar espacio, dejar Prev/Play/Next */
+  .player-controls-buttons button:first-child,
+  .player-controls-buttons button:last-child {
     display: none;
   }
 
-  .player-play-btn {
-    display: flex;
+  /* Barra de progreso fija al fondo de la barra de control en mobile */
+  .player-progress-row {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .player-time {
+    display: none; /* Ocultar los números de tiempo */
+  }
+
+  .player-progress-bar {
+    width: 100%;
+    border-radius: 0;
+    height: 3px;
+  }
+
+  .player-progress-bg {
+    border-radius: 0;
   }
 
   .player-controls-right {
