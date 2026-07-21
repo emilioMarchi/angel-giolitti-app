@@ -2,7 +2,7 @@
 
 Este documento sirve como punto de partida y contexto inmediato para cualquier agente de IA o desarrollador que retome el proyecto. Contiene el estado actual, especificaciones del stack y los siguientes pasos a seguir.
 
-**Última actualización:** 21 de Julio de 2026, 16:10hs (ART)
+**Última actualización:** 21 de Julio de 2026, 17:30hs (ART)
 
 ---
 
@@ -52,7 +52,8 @@ Este documento sirve como punto de partida y contexto inmediato para cualquier a
 * **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles (orden cronológico) más sección "Playlists del Artista". Permite expandir cada disco en la misma vista (SPA pura) para reproducir directo con Zustand. (Incluye fix `supabase.ts` para despliegue sin fallos SSR en Vercel).
 * **Proyectos (`/proyectos`):** **[COMPLETADO]** Grid audiovisual inmersivo conectado a Supabase con embebido dinámico (YouTube/Vimeo) y auto-pausa del audio general de Zustand.
 * **Eventos (`/eventos`):** **[COMPLETADO]** Diseño "Live Events" tipo Spotify conectado a Supabase. Fechas "Próximas" y "Pasadas" separadas. Vista detallada con flyer y enlaces a tickets y Google Maps.
-* **Galería (`/galeria`):** **[COMPLETADO]** Grilla de álbumes de fotos conectada a `media_albums`, detalle por álbum con grid de fotos/videos, lightbox (`yet-another-react-lightbox`) para fotos y modal embebido para videos con auto-pausa del reproductor global.
+* **Galería (`/galeria`):** **[COMPLETADO]** Grilla de álbumes de fotos conectada a `media_albums`, detalle por álbum con grid de fotos/videos, lightbox (`yet-another-react-lightbox`) unificado para fotos y videos (YouTube/Vimeo) con auto-pausa del reproductor global.
+* **Fix Mobile Responsivo:** **[COMPLETADO]** Reproductor inferior en mobile: título y álbum del track visibles, sin scroll lateral, controles centrados, barra de progreso full-width fija al fondo.
 * **Bio (`/bio`):** Pendiente.
 * **Migración Datos (`Paso 3.7`):** Pendiente. Script Node/TS para migrar JSON metadata + archivos multimedia del proyecto anterior a R2 + Supabase.
 
@@ -76,7 +77,7 @@ angel-giolitti/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx                  # Layout raíz (Navbar + children + Player)
-│   │   ├── globals.css                 # Tema oscuro premium + tokens CSS
+│   │   ├── globals.css                 # Tema oscuro premium + tokens CSS + fix mobile player responsive
 │   │   └── page.tsx                    # Home page con placeholders
 │   ├── components/
 │   │   ├── GlobalAudioPlayer.tsx       # Reproductor persistente inferior
@@ -100,9 +101,8 @@ angel-giolitti/
 
 ### Para el siguiente agente:
 
-1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la app y sus pestañas (Música, Proyectos, Eventos) funcionando.
+1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la app y sus pestañas (Música, Proyectos, Eventos, Galería) funcionando. **Probar en mobile (DevTools device toolbar)** — el reproductor debe mostrar título, álbum del track, controles centrados y barra de progreso full-width sin scroll horizontal.
 2. **Nuevos módulos por abordar (Módulos Estáticos / Finales de UI):**
-   * **Paso 3.5: Módulo Galería (`/galeria`):** UI para mostrar fotos y álbumes (idealmente con componente lightbox o modal).
    * **Paso 3.6: Módulo Bio (`/bio`):** Biografía e información de prensa y descargas PDF.
    * **Paso 3.7: Migración de Datos del Proyecto Anterior:** Script que lea el JSON de metadata, suba archivos multimedia a R2 e inserte registros en Supabase.
    * **Conectar Home:** Actualizar la Home (`/`) para que lea dinámicamente los últimos lanzamientos de música y fechas próximas reales desde Supabase.
