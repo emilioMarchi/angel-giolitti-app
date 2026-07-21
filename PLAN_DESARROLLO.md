@@ -157,6 +157,11 @@ flowchart TD
   * Biografía completa redactada con opción de lectura expandible.
   * Sección de descargas: Dossier de prensa PDF y CV del artista (alojados en R2).
   * Enlaces a redes sociales y contacto oficial.
+* **Paso 3.7: Migración de Datos del Proyecto Anterior**
+  * Análisis y estructura del JSON de metadata existente (mapeo de tablas y campos).
+  * Definición de estructura de carpetas en Cloudflare R2: `tracks/`, `images/gallery/`, `images/projects/`, `images/albums/`, `images/profile/`.
+  * Script de migración (Node/TS) que lea el JSON, suba archivos multimedia a R2 vía SDK S3, e inserte los registros correspondientes en Supabase (albums, tracks, projects, media_albums, media_items, artist_profile).
+  * Validación post-migración: verificar rutas en BD apunten correctamente a R2 y que el frontend las renderice sin errores.
 
 ---
 

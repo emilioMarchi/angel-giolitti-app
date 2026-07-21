@@ -52,8 +52,9 @@ Este documento sirve como punto de partida y contexto inmediato para cualquier a
 * **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles (orden cronológico) más sección "Playlists del Artista". Permite expandir cada disco en la misma vista (SPA pura) para reproducir directo con Zustand. (Incluye fix `supabase.ts` para despliegue sin fallos SSR en Vercel).
 * **Proyectos (`/proyectos`):** **[COMPLETADO]** Grid audiovisual inmersivo conectado a Supabase con embebido dinámico (YouTube/Vimeo) y auto-pausa del audio general de Zustand.
 * **Eventos (`/eventos`):** **[COMPLETADO]** Diseño "Live Events" tipo Spotify conectado a Supabase. Fechas "Próximas" y "Pasadas" separadas. Vista detallada con flyer y enlaces a tickets y Google Maps.
-* **Galería (`/galeria`):** Pendiente.
+* **Galería (`/galeria`):** **[COMPLETADO]** Grilla de álbumes de fotos conectada a `media_albums`, detalle por álbum con grid de fotos/videos, lightbox (`yet-another-react-lightbox`) para fotos y modal embebido para videos con auto-pausa del reproductor global.
 * **Bio (`/bio`):** Pendiente.
+* **Migración Datos (`Paso 3.7`):** Pendiente. Script Node/TS para migrar JSON metadata + archivos multimedia del proyecto anterior a R2 + Supabase.
 
 ### ⬜ ETAPA 4: Panel de Administración (`/admin`) — PENDIENTE
 ### ⬜ ETAPA 5: Métricas, SEO y Optimizaciones — PENDIENTE
@@ -103,6 +104,7 @@ angel-giolitti/
 2. **Nuevos módulos por abordar (Módulos Estáticos / Finales de UI):**
    * **Paso 3.5: Módulo Galería (`/galeria`):** UI para mostrar fotos y álbumes (idealmente con componente lightbox o modal).
    * **Paso 3.6: Módulo Bio (`/bio`):** Biografía e información de prensa y descargas PDF.
+   * **Paso 3.7: Migración de Datos del Proyecto Anterior:** Script que lea el JSON de metadata, suba archivos multimedia a R2 e inserte registros en Supabase.
    * **Conectar Home:** Actualizar la Home (`/`) para que lea dinámicamente los últimos lanzamientos de música y fechas próximas reales desde Supabase.
 3. (Opcional): Comenzar con la **Etapa 4 (Panel Admin `/admin`)** para dotar a la plataforma de un CMS protegido.
 
