@@ -171,6 +171,7 @@
   grid-template-columns: var(--sidebar-width) 1fr;
   grid-template-rows: 1fr var(--player-height);
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: #000000;
   gap: 8px;
@@ -1352,6 +1353,8 @@
   .spotify-layout {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 72px;
+    height: 100vh;
+    height: 100dvh;
     padding: 0;
     gap: 0;
   }
