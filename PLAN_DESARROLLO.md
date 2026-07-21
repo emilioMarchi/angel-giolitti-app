@@ -141,13 +141,15 @@ flowchart TD
   * Sección adicional de "Playlists del Artista" (curadas por el usuario).
   * Vista detallada interactiva en la misma página de la SPA (sin recargas) que muestra portada HD, fecha, lista de canciones con número, duración y botón de reproducción. Se integra 100% con Zustand y no interrumpe el audio.
   * Solucionado el bug de compilación de Supabase SSR usando placeholders para evitar cuelgues en Vercel durante `next build`.
-* **Paso 3.3: Módulo Proyectos Audiovisuales (`/proyectos` y `/proyectos/[slug]`)**
-  * Grid de producciones audiovisuales y transmedia.
-  * Ficha de proyecto: Reproductor de video embebido (YouTube/Vimeo API), sinopsis, créditos y galería de imágenes del proyecto.
-  * Integración de auto-pausa del audio de fondo al darle play al video.
-* **Paso 3.4: Módulo Eventos y Agenda (`/eventos`)**
-  * Listado cronológico de eventos próximos y pasados.
-  * Detalle de evento: Flyer, fecha y hora, lugar, mapa interactivo (Google Maps embed) y botón a compra de tickets.
+* **[x] Paso 3.3: Módulo Proyectos Audiovisuales (`/proyectos`) (Completado)**
+  * Grid de producciones audiovisuales (Live Sessions, Videoclips, Docs) conectado a `projects`.
+  * Vista interactiva in-page con embebido del video (YouTube/Vimeo) y badge de categoría.
+  * Integración con `usePlayerStore`: El audio de fondo de la SPA se pausa automáticamente al interactuar con el panel del video para evitar solapamientos sonoros.
+* **[x] Paso 3.4: Módulo Eventos y Agenda (`/eventos`) (Completado)**
+  * Listado cronológico conectado a la tabla `events`.
+  * Diseño estilo "Live Events" de Spotify, separando fechas "Próximas" y "Pasadas".
+  * Cuadro de fecha visual estilizado (calendario dark mode).
+  * Panel de detalles expansivo (SPA pura) que revela Flyer en HD gigante, botón comprar tickets y acceso a Google Maps.
 * **Paso 3.5: Módulo Galería Multimedia (`/galeria`)**
   * Álbumes de fotos clasificadas (Conciertos, Sesiones, Backstage).
   * Visualizador Lightbox en pantalla completa con navegación entre imágenes.

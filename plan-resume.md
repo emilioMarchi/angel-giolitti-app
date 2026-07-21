@@ -2,7 +2,7 @@
 
 Este documento sirve como punto de partida y contexto inmediato para cualquier agente de IA o desarrollador que retome el proyecto. Contiene el estado actual, especificaciones del stack y los siguientes pasos a seguir.
 
-**Última actualización:** 21 de Julio de 2026, 15:20hs (ART)
+**Última actualización:** 21 de Julio de 2026, 16:10hs (ART)
 
 ---
 
@@ -50,8 +50,8 @@ Este documento sirve como punto de partida y contexto inmediato para cualquier a
 ### ⏳ ETAPA 3: Módulos Públicos (Frontend SPA) — EN PROGRESO
 * **Home (`/`):** **[COMPLETADO]** Creado como un "Perfil de Artista" idéntico a Spotify (Hero grande con gradient, avatar, tracks destacados con ecualizador animado, barra de botones integradas).
 * **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles (orden cronológico) más sección "Playlists del Artista". Permite expandir cada disco en la misma vista (SPA pura) para reproducir directo con Zustand. (Incluye fix `supabase.ts` para despliegue sin fallos SSR en Vercel).
-* **Proyectos (`/proyectos`):** Pendiente.
-* **Eventos (`/eventos`):** Pendiente.
+* **Proyectos (`/proyectos`):** **[COMPLETADO]** Grid audiovisual inmersivo conectado a Supabase con embebido dinámico (YouTube/Vimeo) y auto-pausa del audio general de Zustand.
+* **Eventos (`/eventos`):** **[COMPLETADO]** Diseño "Live Events" tipo Spotify conectado a Supabase. Fechas "Próximas" y "Pasadas" separadas. Vista detallada con flyer y enlaces a tickets y Google Maps.
 * **Galería (`/galeria`):** Pendiente.
 * **Bio (`/bio`):** Pendiente.
 
@@ -95,17 +95,16 @@ angel-giolitti/
 
 ## 🚀 5. PRÓXIMO PASO INMEDIATO (DÓNDE RETOMAR)
 
-**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.3](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
+**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.5](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
 
 ### Para el siguiente agente:
 
-1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la home como un perfil de Spotify.
-2. **Nuevos módulos por abordar:**
-   * **Paso 3.3: Módulo Proyectos (`/proyectos`):** Grid de proyectos audiovisuales con embebido de YouTube/Vimeo. Debe pausar el `usePlayerStore` automáticamente al darle play a un video (para no superponer audio).
-   * **Paso 3.4: Módulo Eventos (`/eventos`):** Listado cronológico, visualización elegante de fechas pasadas y futuras.
+1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la app y sus pestañas (Música, Proyectos, Eventos) funcionando.
+2. **Nuevos módulos por abordar (Módulos Estáticos / Finales de UI):**
    * **Paso 3.5: Módulo Galería (`/galeria`):** UI para mostrar fotos y álbumes (idealmente con componente lightbox o modal).
-   * **Paso 3.6: Módulo Bio (`/bio`):** Biografía e información de prensa.
-3. (Opcional): Si el Frontend público está muy avanzado, comenzar con la **Etapa 4 (Panel Admin `/admin`)** para dotar a la plataforma de CRUD real a la DB Supabase.
+   * **Paso 3.6: Módulo Bio (`/bio`):** Biografía e información de prensa y descargas PDF.
+   * **Conectar Home:** Actualizar la Home (`/`) para que lea dinámicamente los últimos lanzamientos de música y fechas próximas reales desde Supabase.
+3. (Opcional): Comenzar con la **Etapa 4 (Panel Admin `/admin`)** para dotar a la plataforma de un CMS protegido.
 
 ### Archivos de referencia obligatorios:
 * Leer [base-proyect.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/base-proyect.md) para las especificaciones de cada módulo.
