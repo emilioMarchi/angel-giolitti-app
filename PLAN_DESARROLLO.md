@@ -128,7 +128,7 @@ flowchart TD
 
 ---
 
-### 🔹 ETAPA 3: Desarrollo de Rutas y Módulos Públicos (Frontend SPA) (EN PROGRESO ⏳)
+### 🔹 ETAPA 3: Desarrollo de Rutas y Módulos Públicos (Frontend SPA) (COMPLETADA ✅)
 **Objetivo:** Implementar todas las páginas públicas del sitio web con navegación fluida sin cortes de audio.
 
 * **[x] Paso 3.1: Vista Home (`/`) - Perfil de Artista (Completado)**
@@ -150,19 +150,21 @@ flowchart TD
   * Diseño estilo "Live Events" de Spotify, separando fechas "Próximas" y "Pasadas".
   * Cuadro de fecha visual estilizado (calendario dark mode).
   * Panel de detalles expansivo (SPA pura) que revela Flyer en HD gigante, botón comprar tickets y acceso a Google Maps.
-* **Paso 3.5: Módulo Galería Multimedia (`/galeria`)**
-  * Álbumes de fotos clasificadas (Conciertos, Sesiones, Backstage).
-  * Visualizador Lightbox en pantalla completa con navegación entre imágenes.
+* **[x] Paso 3.5: Módulo Galería Multimedia (`/galeria`) (Completado)**
+  * Álbumes de fotos clasificadas (Conciertos, Sesiones, Backstage) conectados a `media_albums`.
+  * Detalle por álbum con grid de fotos/videos y lightbox (`yet-another-react-lightbox`) unificado para fotos y YouTube/Vimeo.
+  * Auto-pausa del reproductor global al abrir el lightbox.
 * **[x] Paso 3.6: Módulo Biografía & Dossier (`/bio`) (Completado)**
   * Biografía completa redactada con opción de lectura expandible.
   * Sección de descargas: Dossier de prensa PDF y CV del artista (alojados en R2).
   * Enlaces a redes sociales y contacto oficial.
-  * **Corregido error 406 en Supabase**: Cambiado `.single()` por `.maybeSingle()` en `src/app/bio/page.tsx` para manejar tabla `artist_profile` vacía sin error 406.
-* **Paso 3.7: Migración de Datos del Proyecto Anterior**
-  * Análisis y estructura del JSON de metadata existente (mapeo de tablas y campos).
-  * Definición de estructura de carpetas en Cloudflare R2: `tracks/`, `images/gallery/`, `images/projects/`, `images/albums/`, `images/profile/`.
-  * Script de migración (Node/TS) que lea el JSON, suba archivos multimedia a R2 vía SDK S3, e inserte los registros correspondientes en Supabase (albums, tracks, projects, media_albums, media_items, artist_profile).
-  * Validación post-migración: verificar rutas en BD apunten correctamente a R2 y que el frontend las renderice sin errores.
+  * **Hero con overlay:** Avatar, nombre y detalles del artista superpuestos en la parte inferior del banner con layout responsive (desktop: overlay al fondo, mobile: apilado debajo).
+  * **Corregido error 406 en Supabase**: Cambiado `.single()` por `.maybeSingle()` para manejar tabla `artist_profile` vacía.
+* **~~Paso 3.7: Migración de Datos del Proyecto Anterior~~ (Pospuesto)**
+  * Pospuesto hasta definir necesidades de migración. La app funciona con datos mock/placeholder.
+* **Extra: Navegador / Buscador Global (Futuro)**
+  * Barra de búsqueda global para filtrar música, proyectos, eventos y galería.
+  * Previsto para una iteración posterior tras completar el Panel de Administración.
 
 ---
 
@@ -222,7 +224,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Etapa 1** | Infraestructura & Base de Datos | Proyecto Supabase configurado + Bucket R2 + Scripts DDL SQL |
 | **Etapa 2** | UI/UX Base & Reproductor Audio | Layout responsive + Store Zustand + Reproductor Persistente |
-| **Etapa 3** | Vistas Públicas SPA | Rutas `/`, `/musica`, `/proyectos`, `/eventos`, `/galeria`, `/bio` |
+| **Etapa 3** | Vistas Públicas SPA | Rutas `/`, `/musica`, `/proyectos`, `/eventos`, `/galeria`, `/bio` (COMPLETADA ✅) |
 | **Etapa 4** | Panel de Administración Privado | Dashboard `/admin` + CRUD completo de discos/tracks/eventos |
 | **Etapa 5** | Seguridad, SEO & Métricas | Métricas de reproducción + Likes anti-spam + Meta OG |
 | **Etapa 6** | Despliegue & Entrega | Dominio activo `angelgiolitti.com.ar` + Manual de usuario |

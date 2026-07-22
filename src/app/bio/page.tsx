@@ -131,7 +131,7 @@ export default function BioPage() {
         {/* Hero / Cabecera */}
         <section className="relative mb-12">
           {/* Cover Image */}
-          <div className="relative w-full aspect-[16/5] md:aspect-[16/5] rounded-xl overflow-hidden">
+          <div className="relative w-full aspect-[16/5] rounded-xl overflow-hidden">
             {profile.cover_url ? (
               <img
                 src={profile.cover_url}
@@ -161,7 +161,7 @@ export default function BioPage() {
               </div>
               <div className="px-4">
                 <h1 className="text-3xl font-black tracking-tight text-white">{profile.name}</h1>
-                <div className="flex items-center justify-center gap-4 mt-2 text-muted-foreground text-sm flex-wrap">
+                <div className="flex items-center justify-center gap-2 mt-1 text-muted-foreground text-sm flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="h-4 w-4" /> {profile.monthly_listeners.toLocaleString()} oyentes
                   </span>
@@ -172,8 +172,8 @@ export default function BioPage() {
               </div>
             </div>
 
-            {/* Desktop: overlay layout */}
-            <div className="hidden md:block absolute bottom-0 left-6 -translate-y-1/2 flex items-end gap-4">
+            {/* Desktop: overlay layout - bottom aligned */}
+            <div className="hidden md:flex absolute inset-0 items-end px-6 pb-2 gap-4">
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-background shadow-2xl bg-zinc-800 flex-shrink-0">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
@@ -183,7 +183,7 @@ export default function BioPage() {
                   </div>
                 )}
               </div>
-              <div className="pb-4 text-white">
+              <div className="text-white">
                 <h1 className="text-3xl md:text-5xl font-black tracking-tight">{profile.name}</h1>
                 <div className="flex items-center gap-4 mt-2 text-muted-foreground">
                   <span className="flex items-center gap-1">
