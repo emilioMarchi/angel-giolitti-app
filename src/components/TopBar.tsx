@@ -26,14 +26,16 @@ export default function TopBar() {
   return (
     <>
       <header className="topbar">
-        {/* Botón menú hamburguesa - Mobile */}
-        <button
-          onClick={() => setIsMenuOpen(true)}
-          className="topbar-nav-btn md:hidden"
-          aria-label="Abrir menú de navegación"
+        {/* Logo - Lado izquierdo */}
+        <Link
+          href="/"
+          className="flex items-center gap-1"
         >
-          <Menu className="h-5 w-5" />
-        </button>
+          <span className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading), var(--font-sans), sans-serif' }}>
+            <span className="text-primary">Á</span>ngel{' '}
+            <span className="text-primary">G</span>iolitti
+          </span>
+        </Link>
 
         {/* Botones de navegación historial */}
         <div className="topbar-nav-buttons">
@@ -68,9 +70,18 @@ export default function TopBar() {
             AG
           </a>
         </div>
+
+        {/* Botón menú hamburguesa - Mobile (lado derecho) */}
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="topbar-nav-btn md:hidden ml-2"
+          aria-label="Abrir menú de navegación"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
       </header>
 
-      {/* Menú lateral móvil (Sidebar style) */}
+      {/* Menú lateral móvil (Sidebar style) - LADO DERECHO */}
       <div
         className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
           isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -86,8 +97,8 @@ export default function TopBar() {
 
         {/* Panel lateral */}
         <div
-          className="absolute top-0 left-0 h-full w-72 max-w-[85vw] bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-out z-10"
-          style={{ transform: isMenuOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+          className="absolute top-0 right-0 h-full w-72 max-w-[85vw] bg-background border-l border-border shadow-2xl transform transition-transform duration-300 ease-out z-10"
+          style={{ transform: isMenuOpen ? 'translateX(0)' : 'translateX(100%)' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header del panel */}
