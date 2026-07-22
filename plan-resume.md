@@ -97,19 +97,17 @@ angel-giolitti/
 
 ## 🚀 5. PRÓXIMO PASO INMEDIATO (DÓNDE RETOMAR)
 
-**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 4, Panel de Administración](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
+**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.7](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
 
 ### Para el siguiente agente:
 
 1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la app y todas sus pestañas (Inicio, Música, Proyectos, Eventos, Galería, Bio) funcionando correctamente en desktop y mobile.
-2. **Etapa 4 — Panel de Administración (`/admin`):** Desarrollar el CMS protegido:
-   * **Paso 4.1:** Autenticación con Supabase Auth (`/admin/login`)
-   * **Paso 4.2:** Dashboard con métricas (`/admin/dashboard`)
-   * **Paso 4.3:** CRUD de Música (álbumes, tracks con subida a R2)
-   * **Paso 4.4:** CRUD de Proyectos, Eventos y Galerías
-   * **Paso 4.5:** Gestión de Perfil y Documentos
-3. **Extra (post-Etapa 4):** Barra de búsqueda global para filtrar contenido del sitio.
-4. **Luego:** Etapa 5 (Métricas, SEO, OpenGraph) y Etapa 6 (QA, Despliegue).
+2. **Paso 3.7 — Migración de Datos del Proyecto Anterior:**
+   * Analizar el JSON de metadata existente y mapear campos a las tablas de Supabase.
+   * Definir estructura de carpetas en Cloudflare R2 (`tracks/`, `images/gallery/`, `images/projects/`, `images/albums/`, `images/profile/`).
+   * Crear script Node/TS que lea el JSON, suba archivos multimedia a R2 vía SDK S3 e inserte los registros en Supabase.
+   * Validar post-migración: rutas en BD apunten correctamente a R2 y el frontend las renderice sin errores.
+3. **Luego:** Etapa 4 (Panel Admin `/admin`), Extra (Buscador Global), Etapa 5 (Métricas, SEO, OpenGraph) y Etapa 6 (QA, Despliegue).
 
 ### Archivos de referencia obligatorios:
 * Leer [base-proyect.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/base-proyect.md) para las especificaciones de cada módulo.
