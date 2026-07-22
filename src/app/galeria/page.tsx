@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Image as ImageIcon,
@@ -11,6 +11,7 @@ import {
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import { usePlayerStore } from '@/store/usePlayerStore';
+import { getR2Url } from '@/lib/utils';
 
 interface MediaAlbum {
   id: string;
@@ -110,6 +111,23 @@ function PhotoGridSkeleton() {
   );
 }
 
+function getMediaThumbnail(item: MediaItem): string {
+  if (item.type !== 'video') return item.url;
+  try {
+    const url = item.url;
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2].length === 11) {
+        return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+      }
+    }
+  } catch (e) {
+    console.error('Error parsing video URL for thumbnail:', e);
+  }
+  return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80';
+}
+
 export default function GaleriaPage() {
   const { isPlaying, setPlaying } = usePlayerStore();
   const [albums, setAlbums] = useState<MediaAlbum[]>(mockAlbums);
@@ -129,7 +147,11 @@ export default function GaleriaPage() {
           .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          setAlbums(data as MediaAlbum[]);
+          const sanitized = data.map((a: any) => ({
+            ...a,
+            cover_image_url: getR2Url(a.cover_image_url)
+          }));
+          setAlbums(sanitized);
         }
       } catch (err) {
         console.error('Error fetching media albums, using mocks:', err);
@@ -152,7 +174,11 @@ export default function GaleriaPage() {
         .order('item_order', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        setItems(data as MediaItem[]);
+        const sanitized = data.map((item: any) => ({
+          ...item,
+          url: getR2Url(item.url)
+        }));
+        setItems(sanitized);
         return;
       }
     } catch (err) {
@@ -163,7 +189,7 @@ export default function GaleriaPage() {
     if (fallback) setItems(fallback);
   };
 
-  const slides: GallerySlide[] = items.map((item) => {
+  const slides: GallerySlide[] = useMemo(() => items.map((item) => {
     if (item.type === 'video') {
       return {
         src: item.url,
@@ -173,7 +199,7 @@ export default function GaleriaPage() {
       };
     }
     return { src: item.url, alt: item.caption || 'Foto' };
-  });
+  }), [items]);
 
   if (selectedAlbum) {
     return (
@@ -238,7 +264,7 @@ export default function GaleriaPage() {
                 className="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer"
               >
                 <img
-                  src={item.type === 'video' ? `https://img.youtube.com/vi/${new URL(item.url).pathname.split('/').pop()}/hqdefault.jpg` : item.url}
+                  src={getMediaThumbnail(item)}
                   alt={item.caption || 'Media'}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
@@ -306,8 +332,8 @@ export default function GaleriaPage() {
             },
           }}
           on={{
-            view: ({ index }) => {
-              const slide = slides[index];
+            view: ({ index: newIndex }) => {
+              const slide = slides[newIndex];
               if (slide && '_type' in slide && slide._type === 'youtube') {
                 if (isPlaying) setPlaying(false);
               }

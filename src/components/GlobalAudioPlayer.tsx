@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useCallback } from 'react';
-import { usePlayerStore } from '@/store/usePlayerStore';
+import { usePlayerStore, Track } from '@/store/usePlayerStore';
+import { getR2Url } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import {
   Play,
   Pause,
@@ -48,13 +50,56 @@ export default function GlobalAudioPlayer() {
     setDuration,
   } = usePlayerStore();
 
+  // Tema por defecto al cargar el sitio
+  useEffect(() => {
+    if (!currentTrack) {
+      const defaultAudioUrl = 'tracks/handangel/handangel/patio-colibri.mp3';
+
+      supabase
+        .from('tracks')
+        .select('id, album_id, title, audio_url, duration_seconds, track_order, albums(title, cover_url)')
+        .eq('audio_url', defaultAudioUrl)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            const t = data as any;
+            const track: Track = {
+              id: t.id,
+              album_id: t.album_id,
+              title: t.title,
+              audio_url: t.audio_url,
+              duration_seconds: t.duration_seconds,
+              track_order: t.track_order,
+              album_title: t.albums?.title || '',
+              cover_url: getR2Url(t.albums?.cover_url) || undefined,
+            };
+            usePlayerStore.getState().playTrack(track, [track]);
+          } else {
+            // Fallback si no existe en la DB
+            const track: Track = {
+              id: 'default-patio-colibri',
+              album_id: null,
+              title: 'Patio Colibrí',
+              audio_url: defaultAudioUrl,
+              duration_seconds: null,
+              track_order: 1,
+              album_title: '',
+              cover_url: undefined,
+            };
+            usePlayerStore.getState().playTrack(track, [track]);
+          }
+        });
+    }
+  }, []);
+
   // Sincronizar src del audio cuando cambia el track
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    if (audio.src !== currentTrack.audio_url) {
-      audio.src = currentTrack.audio_url;
+    const absoluteAudioUrl = getR2Url(currentTrack.audio_url);
+    if (audio.src !== absoluteAudioUrl) {
+      audio.src = absoluteAudioUrl;
       audio.load();
     }
   }, [currentTrack]);
@@ -151,7 +196,7 @@ export default function GlobalAudioPlayer() {
               <div className="player-cover">
                 {currentTrack.cover_url ? (
                   <img
-                    src={currentTrack.cover_url}
+                    src={getR2Url(currentTrack.cover_url)}
                     alt={currentTrack.title}
                     className="player-cover-img"
                   />

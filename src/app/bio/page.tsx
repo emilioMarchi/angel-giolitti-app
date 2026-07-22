@@ -23,6 +23,7 @@ import {
   Send,
 } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
+import { getR2Url } from '@/lib/utils';
 
 interface ArtistProfile {
   id: string;
@@ -59,8 +60,8 @@ A lo largo de su carrera ha editado en sellos como **Modular Field**, **Kvitnu**
 Además de su faceta como solista, colabora regularmente con coreógrafos, directores de cine y artistas visuales, componiendo bandas sonoras y diseñando paisajes sonoros para instalaciones site-specific. Es docente de síntesis y producción electrónica en instituciones de Buenos Aires y dicta talleres internacionales sobre modular synthesis y live coding.
 
 Su discografía incluye los álbumes *«Horizonte Infinito»* (2025), *«Ciudad Nocturna»* (2023), *«Estructuras de Luz»* (2021) y numerosos EPs y colaboraciones. Actualmente reside en Buenos Aires, donde dirige su estudio **Estudios Ámbar**, espacio dedicado a la grabación, experimentación y difusión de la música electrónica de vanguardia.`,
-  avatar_url: '',
-  cover_url: '',
+  avatar_url: 'images/gallery/handangel/photo-7.webp',
+  cover_url: 'images/gallery/handangel/photo-7.webp',
   monthly_listeners: 12400,
   location: 'Buenos Aires, Argentina',
   website: 'https://angelgiolitti.com.ar',
@@ -91,7 +92,46 @@ export default function BioPage() {
           .maybeSingle();
 
         if (!error && data) {
-          setProfile(data as ArtistProfile);
+          const dbProfile = data as any;
+          const mappedProfile: ArtistProfile = {
+            id: dbProfile.id,
+            name: dbProfile.full_name || 'Ángel Giolitti',
+            bio_short: dbProfile.short_bio || '',
+            bio_full: dbProfile.full_bio_markdown || '',
+            avatar_url: getR2Url(dbProfile.avatar_url) || '',
+            cover_url: getR2Url(dbProfile.cover_url) || '',
+            monthly_listeners: dbProfile.monthly_listeners || 12400,
+            location: dbProfile.location || 'Buenos Aires, Argentina',
+            website: dbProfile.social_links?.website || 'https://angelgiolitti.com.ar',
+            instagram: dbProfile.social_links?.instagram || '',
+            twitter: dbProfile.social_links?.twitter || '',
+            youtube: dbProfile.social_links?.youtube || '',
+            spotify: dbProfile.social_links?.spotify || '',
+            soundcloud: dbProfile.social_links?.soundcloud || '',
+            bandcamp: dbProfile.social_links?.bandcamp || '',
+            dossier_pdf_url: '',
+            cv_pdf_url: '',
+            created_at: dbProfile.created_at || '',
+            updated_at: dbProfile.updated_at || '',
+          };
+
+          // Consultar los documentos (dossier y CV)
+          try {
+            const { data: docsData, error: docsError } = await supabase
+              .from('artist_documents')
+              .select('*');
+
+            if (!docsError && docsData) {
+              const dossier = docsData.find(d => d.document_type === 'dossier');
+              const cv = docsData.find(d => d.document_type === 'cv');
+              if (dossier) mappedProfile.dossier_pdf_url = getR2Url(dossier.file_url);
+              if (cv) mappedProfile.cv_pdf_url = getR2Url(cv.file_url);
+            }
+          } catch (docErr) {
+            console.error('Error fetching artist documents:', docErr);
+          }
+
+          setProfile(mappedProfile);
         }
       } catch (err) {
         console.error('Error fetching profile, using mocks:', err);
@@ -129,70 +169,20 @@ export default function BioPage() {
     <div className="bio-tab-view px-6 py-6 pb-24">
       <div className="max-w-4xl mx-auto">
         {/* Hero / Cabecera */}
-        <section className="relative mb-12">
-          {/* Cover Image */}
-          <div className="relative w-full aspect-[16/5] rounded-xl overflow-hidden">
-            {profile.cover_url ? (
-              <img
-                src={profile.cover_url}
-                alt={`${profile.name} - Cover`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-primary/30 via-zinc-900 to-black flex items-center justify-center">
-                <Music className="h-24 w-24 text-primary/30" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          </div>
-
-          {/* Info del artista - responsive layout */}
-          <div className="relative z-10 px-6 md:px-0">
-            {/* Mobile: stacked layout - below cover */}
-            <div className="md:hidden flex flex-col items-center text-center gap-4 py-8 -mt-12 relative z-10">
-              <div className="w-28 h-28 rounded-xl overflow-hidden border-4 border-background shadow-2xl bg-zinc-800 flex-shrink-0">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-14 w-14 text-muted-foreground/30" />
-                  </div>
-                )}
-              </div>
-              <div className="px-4">
-                <h1 className="text-3xl font-black tracking-tight text-white">{profile.name}</h1>
-                <div className="flex items-center justify-center gap-2 mt-1 text-muted-foreground text-sm flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <User className="h-4 w-4" /> {profile.monthly_listeners.toLocaleString()} oyentes
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" /> {profile.location}
-                  </span>
-                </div>
-              </div>
+        <section className="mb-8">
+          <div className="flex flex-col items-center text-center gap-4">
+            <div className="w-36 h-36 rounded-2xl overflow-hidden border-4 border-background shadow-2xl bg-zinc-800 flex-shrink-0">
+              <img src={getR2Url('images/gallery/handangel/photo-7.webp')} alt={profile.name} className="w-full h-full object-cover" />
             </div>
-
-            {/* Desktop: overlay layout - bottom aligned */}
-            <div className="hidden md:flex absolute inset-0 items-end px-6 pb-2 gap-4">
-              <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-background shadow-2xl bg-zinc-800 flex-shrink-0">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-14 w-14 text-muted-foreground/30" />
-                  </div>
-                )}
-              </div>
-              <div className="text-white">
-                <h1 className="text-3xl md:text-5xl font-black tracking-tight">{profile.name}</h1>
-                <div className="flex items-center gap-4 mt-2 text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <User className="h-4 w-4" /> {profile.monthly_listeners.toLocaleString()} oyentes mensuales
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" /> {profile.location}
-                  </span>
-                </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">{profile.name}</h1>
+              <div className="flex items-center justify-center gap-3 mt-2 text-muted-foreground text-sm flex-wrap">
+                <span className="flex items-center gap-1">
+                  <User className="h-4 w-4" /> {profile.monthly_listeners.toLocaleString()} oyentes
+                </span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" /> {profile.location}
+                </span>
               </div>
             </div>
           </div>

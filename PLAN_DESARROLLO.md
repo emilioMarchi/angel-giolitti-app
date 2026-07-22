@@ -132,15 +132,20 @@ flowchart TD
 **Objetivo:** Implementar todas las páginas públicas del sitio web con navegación fluida sin cortes de audio.
 
 * **[x] Paso 3.1: Vista Home (`/`) - Perfil de Artista (Completado)**
-  * **Hero Banner:** Perfil de artista estilo Spotify, avatar grande, insignia de cuenta verificada, título "Ángel Giolitti" y métricas de oyentes/followers.
-  * **Barra de Acciones:** Botón de Play verde/turquesa flotante, Shuffle, Seguir y más opciones integradas.
-  * **Tracklist:** Lista popular o de últimos lanzamientos integrada directamente en el perfil con la animación del ecualizador cuando suena la canción.
-* **[x] Paso 3.2: Módulo Música (`/musica` y vistas detalladas) (Completado)**
-  * Catálogo filtrable por tipo (Álbumes, EPs, Singles) extraído directamente de Supabase (con fallback mockeado si no hay conexión).
-  * Ordenado dinámicamente por año de lanzamiento más reciente.
-  * Sección adicional de "Playlists del Artista" (curadas por el usuario).
-  * Vista detallada interactiva en la misma página de la SPA (sin recargas) que muestra portada HD, fecha, lista de canciones con número, duración y botón de reproducción. Se integra 100% con Zustand y no interrumpe el audio.
-  * Solucionado el bug de compilación de Supabase SSR usando placeholders para evitar cuelgues en Vercel durante `next build`.
+  * **Hero Banner:** Perfil de artista estilo Spotify con imagen de portada (`photo-3.webp`) y gradiente inferior para legibilidad del título.
+  * **Avatar:** Foto de perfil (`photo-0.webp`) en lugar del ícono genérico.
+  * **Barra de Acciones:** Botón de Play verde/turquesa flotante, Shuffle, Seguir y más opciones.
+  * **Tracklist:** Lista de tracks populares con ecualizador animado al reproducir.
+  * **Discografía:** Cards con links a `/musica/{slug}` (ruta individual por álbum).
+  * **Eventos:** Próximas fechas conectadas a Supabase.
+  * **Acceso Rápido:** Links a Proyectos, Galería y Bio.
+* **[x] Paso 3.2: Módulo Música (`/musica` y `/musica/[slug]`) (Completado)**
+  * Catálogo filtrable por tipo (Álbumes, EPs, Singles) extraído de Supabase.
+  * Cada card linkea a `/musica/{slug}` (ruta dinámica individual).
+  * Botón de play inline que reproduce sin navegar (`preventDefault`).
+  * Vista detallada en `/musica/[slug]`: fetch por `slug`, portada HD, tracklist, controles de play, metadatos del álbum.
+  * Sección de Playlists curadas.
+  * Solucionado bug de compilación Supabase SSR.
 * **[x] Paso 3.3: Módulo Proyectos Audiovisuales (`/proyectos`) (Completado)**
   * Grid de producciones audiovisuales (Live Sessions, Videoclips, Docs) conectado a `projects`.
   * Vista interactiva in-page con embebido del video (YouTube/Vimeo) y badge de categoría.
@@ -151,17 +156,30 @@ flowchart TD
   * Cuadro de fecha visual estilizado (calendario dark mode).
   * Panel de detalles expansivo (SPA pura) que revela Flyer en HD gigante, botón comprar tickets y acceso a Google Maps.
 * **[x] Paso 3.5: Módulo Galería Multimedia (`/galeria`) (Completado)**
-  * Álbumes de fotos clasificadas (Conciertos, Sesiones, Backstage) conectados a `media_albums`.
-  * Detalle por álbum con grid de fotos/videos y lightbox (`yet-another-react-lightbox`) unificado para fotos y YouTube/Vimeo.
-  * Auto-pausa del reproductor global al abrir el lightbox.
+  * Álbumes de fotos clasificadas conectados a `media_albums`.
+  * Detalle por álbum con grid de fotos/videos.
+  * **Lightbox corregido:** `slides` estabilizado con `useMemo` para evitar re-renders. Eliminado `setLightboxIndex` del callback `on.view` que causaba reinicio del slide al navegar.
+  * Auto-pausa del reproductor global al abrir videos en el lightbox.
 * **[x] Paso 3.6: Módulo Biografía & Dossier (`/bio`) (Completado)**
-  * Biografía completa redactada con opción de lectura expandible.
+  * Vista simplificada con avatar centrado (`photo-7.webp`) y nombre del artista.
+  * Biografía completa redactada.
   * Sección de descargas: Dossier de prensa PDF y CV del artista (alojados en R2).
   * Enlaces a redes sociales y contacto oficial.
-  * **Hero con overlay:** Avatar, nombre y detalles del artista superpuestos en la parte inferior del banner con layout responsive (desktop: overlay al fondo, mobile: apilado debajo).
-  * **Corregido error 406 en Supabase**: Cambiado `.single()` por `.maybeSingle()` para manejar tabla `artist_profile` vacía.
-* **~~Paso 3.7: Migración de Datos del Proyecto Anterior~~ (Pospuesto)**
-  * Pospuesto hasta definir necesidades de migración. La app funciona con datos mock/placeholder.
+  * Discografía destacada y próximas presentaciones.
+  * Corregido error 406 en Supabase con `.maybeSingle()`.
+* **[x] Paso 3.7: Migración de Datos del Proyecto Anterior (Completado ✅)**
+  * Desarrollado el script de migración [migrate.js](file:///D:/Emi/OVNI/proyectos/angel-giolitti/scripts/migrate.js) y el parche robusto [migrate_patch.js](file:///D:/Emi/OVNI/proyectos/angel-giolitti/scripts/migrate_patch.js) (para tolerar comas extras e imágenes nulas en la galería de fotos y stickers, y corregir rutas duplicadas de audio).
+  * Todos los proyectos, álbumes, tracks, partituras en PDF y colecciones de fotos/stickers del proyecto anterior se optimizaron, subieron a Cloudflare R2 y se registraron en Supabase PostgreSQL.
+* **[x] Paso 3.8: Alineación e Integración de Datos Reales en el Frontend (Completado ✅)**
+  * Todas las páginas conectadas a Supabase con fallbacks mock.
+  * Helper `getR2Url()` en `src/lib/utils.ts` para resolver paths relativos de R2 dinámicamente.
+  * Todas las imágenes, audios y PDFs usan `getR2Url()` para construir URLs absolutas.
+  * **Home:** Discografía linkea a `/musica/{slug}`, banner y avatar con fotos reales de R2.
+  * **Música:** Cards linkean a `/musica/[slug]`, vista individual con fetch por slug.
+  * **Proyectos:** Portada junto al título, lightbox sin bugs de índice.
+  * **Bio:** Avatar con foto real de R2, sin banner.
+  * **Galería:** Lightbox estable con `useMemo`.
+  * **Reproductor:** Inicialización automática con track por defecto desde Supabase (con cover del álbum).
 * **Extra: Navegador / Buscador Global (Futuro)**
   * Barra de búsqueda global para filtrar música, proyectos, eventos y galería.
   * Previsto para una iteración posterior tras completar el Panel de Administración.

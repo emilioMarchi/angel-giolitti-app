@@ -48,13 +48,16 @@ Este documento sirve como punto de partida y contexto inmediato para cualquier a
 * **Navegación:** `Sidebar` y `TopBar` desarrollados y funcionales.
 
 ### ✅ ETAPA 3: Módulos Públicos (Frontend SPA) — COMPLETADA
-* **Home (`/`):** **[COMPLETADO]** Creado como un "Perfil de Artista" idéntico a Spotify (Hero grande con gradient, avatar, tracks destacados con ecualizador animado, barra de botones integradas).
-* **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles (orden cronológico) más sección "Playlists del Artista". Permite expandir cada disco en la misma vista (SPA pura) para reproducir directo con Zustand. (Incluye fix `supabase.ts` para despliegue sin fallos SSR en Vercel).
-* **Proyectos (`/proyectos`):** **[COMPLETADO]** Grid audiovisual inmersivo conectado a Supabase con embebido dinámico (YouTube/Vimeo) y auto-pausa del audio general de Zustand.
-* **Eventos (`/eventos`):** **[COMPLETADO]** Diseño "Live Events" tipo Spotify conectado a Supabase. Fechas "Próximas" y "Pasadas" separadas. Vista detallada con flyer y enlaces a tickets y Google Maps.
-* **Galería (`/galeria`):** **[COMPLETADO]** Grilla de álbumes de fotos conectada a `media_albums`, detalle por álbum con grid de fotos/videos, lightbox (`yet-another-react-lightbox`) unificado para fotos y videos (YouTube/Vimeo) con auto-pausa del reproductor global.
-* **Bio (`/bio`):** **[COMPLETADO]** Biografía completa con hero overlay (avatar + nombre + detalles al fondo del banner), dossier PDF, CV, links sociales y sección de discografía/eventos destacados. Fix error 406 en Supabase con `.maybeSingle()`.
-* **Migración Datos (`Paso 3.7`):** Pospuesto. La app funciona con datos mock/placeholder.
+* **Home (`/`):** **[COMPLETADO]** Perfil de artista estilo Spotify con hero banner (foto `photo-3.webp` con gradiente de legibilidad), avatar (`photo-0.webp`), tracks populares con ecualizador animado, discografía con links a `/musica/{slug}`, eventos próximos y acceso rápido.
+* **Música (`/musica`):** **[COMPLETADO]** Listado por álbumes/EPs/Singles con links a vista individual `/musica/[slug]`. Cada card linkea a la ruta dinámica del álbum. Play inline sin navegar.
+* **Música - Álbum Individual (`/musica/[slug]`):** **[COMPLETADO]** Ruta dinámica que busca álbum por `slug` en Supabase, muestra portada, tracklist, controles de play y metadatos.
+* **Proyectos (`/proyectos`):** **[COMPLETADO]** Grid audiovisual con portada del proyecto junto al título, embebido dinámico (YouTube/Vimeo) y auto-pausa del reproductor global.
+* **Eventos (`/eventos`):** **[COMPLETADO]** Listado cronológico "Próximas" y "Pasadas", vista detallada con flyer y enlaces a tickets.
+* **Galería (`/galeria`):** **[COMPLETADO]** Lightbox corregido — `slides` estabilizado con `useMemo`, eliminado `setLightboxIndex` del `on.view` para evitar reinicio al navegar. Álbumes de fotos/videos con lightbox unificado.
+* **Bio (`/bio`):** **[COMPLETADO]** Vista simplificada con avatar centrado (`photo-7.webp`), bio completa, discografía destacada, eventos, redes sociales, dossier PDF y CV.
+* **Reproductor Global:** **[COMPLETADO]** Al cargar el sitio, busca el track por defecto (`tracks/handangel/handangel/patio-colibri.mp3`) en Supabase, trae portada del álbum y lo setea automáticamente.
+* **Migración Datos (`Paso 3.7`):** **[COMPLETADO]** Scripts `migrate.js` y `migrate_patch.js`. Todos los datos subidos a R2 y registrados en Supabase.
+* **Alineación de Datos Reales (`Paso 3.8`):** **[COMPLETADO]** Todas las páginas conectadas a Supabase con fallbacks mock. Helper `getR2Url()` para resolver paths relativos de R2.
 * **Buscador Global:** Pendiente para iteración futura tras el Panel Admin.
 
 ### ⬜ ETAPA 4: Panel de Administración (`/admin`) — PENDIENTE
@@ -72,42 +75,52 @@ angel-giolitti/
 ├── plan-resume.md                      # ← ESTE ARCHIVO (resumen para agentes)
 ├── base-proyect.md                     # Especificación técnica original
 ├── schema.sql                          # DDL de PostgreSQL ejecutado en Supabase
-├── log.md                              # Log de configuraciones (CORS, etc.)
+├── log.md                              # Log de configuraciones y URLs de referencia
 ├── components.json                     # Config de shadcn/ui
+├── scripts/
+│   ├── migrate.js                      # Script principal de migración
+│   └── migrate_patch.js                # Parche de migración para corregir fallos
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx                  # Layout raíz (Navbar + children + Player)
-│   │   ├── globals.css                 # Tema oscuro premium + tokens CSS + fix mobile player responsive
-│   │   └── page.tsx                    # Home page con placeholders
+│   │   ├── globals.css                 # Tema oscuro premium + tokens CSS + estilos Spotify
+│   │   ├── page.tsx                    # Home — Perfil de artista (hero, tracks, discografía)
+│   │   ├── bio/page.tsx                # Biografía con avatar, bio, redes, dossier
+│   │   ├── musica/
+│   │   │   ├── page.tsx               # Listado de álbumes/EPs/singles/playlists
+│   │   │   └── [slug]/page.tsx        # Vista individual de álbum por slug
+│   │   ├── proyectos/
+│   │   │   ├── page.tsx               # Grid de proyectos audiovisuales
+│   │   │   └── [slug]/page.tsx        # (futuro) Detalle de proyecto
+│   │   ├── eventos/page.tsx           # Agenda de eventos
+│   │   └── galeria/page.tsx           # Galería de fotos/videos
 │   ├── components/
-│   │   ├── GlobalAudioPlayer.tsx       # Reproductor persistente inferior
-│   │   ├── Navbar.tsx                  # Barra de navegación superior
-│   │   └── ui/
-│   │       └── button.tsx              # Componente Button de shadcn/ui
+│   │   ├── GlobalAudioPlayer.tsx       # Reproductor persistente (init con track por defecto)
+│   │   ├── Navbar.tsx                  # Navegación superior
+│   │   └── ui/                         # Componentes shadcn/ui
 │   ├── lib/
 │   │   ├── supabase.ts                 # Cliente Supabase (público)
 │   │   ├── r2.ts                       # Cliente S3 para Cloudflare R2 (servidor)
-│   │   └── utils.ts                    # Utilidad cn() para clases CSS
+│   │   └── utils.ts                    # cn() + getR2Url() helper
 │   └── store/
 │       └── usePlayerStore.ts           # Store Zustand del reproductor
-└── package.json                        # Dependencias del proyecto
+└── package.json
 ```
 
 ---
 
 ## 🚀 5. PRÓXIMO PASO INMEDIATO (DÓNDE RETOMAR)
 
-**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 3, Paso 3.7](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
+**Ubicación en el plan:** [PLAN_DESARROLLO.md — Etapa 4](file:///D:/Emi/OVNI/proyectos/angel-giolitti/PLAN_DESARROLLO.md)
 
 ### Para el siguiente agente:
 
-1. **Verificar que la app compila y levanta correctamente:** Ejecutar `npm run dev` y visitar `http://localhost:3000`. Debe verse la app y todas sus pestañas (Inicio, Música, Proyectos, Eventos, Galería, Bio) funcionando correctamente en desktop y mobile.
-2. **Paso 3.7 — Migración de Datos del Proyecto Anterior:**
-   * Analizar el JSON de metadata existente y mapear campos a las tablas de Supabase.
-   * Definir estructura de carpetas en Cloudflare R2 (`tracks/`, `images/gallery/`, `images/projects/`, `images/albums/`, `images/profile/`).
-   * Crear script Node/TS que lea el JSON, suba archivos multimedia a R2 vía SDK S3 e inserte los registros en Supabase.
-   * Validar post-migración: rutas en BD apunten correctamente a R2 y el frontend las renderice sin errores.
-3. **Luego:** Etapa 4 (Panel Admin `/admin`), Extra (Buscador Global), Etapa 5 (Métricas, SEO, OpenGraph) y Etapa 6 (QA, Despliegue).
+1. **Etapa 3 completa.** Todas las rutas públicas funcionan con datos reales de Supabase + R2.
+2. **Siguiente paso: Etapa 4 — Panel de Administración (`/admin`)**
+   * Autenticación con Supabase Auth
+   * Dashboard con métricas
+   * CRUD de álbumes, tracks, proyectos, eventos y galerías
+   * Gestión de perfil y documentos
 
 ### Archivos de referencia obligatorios:
 * Leer [base-proyect.md](file:///D:/Emi/OVNI/proyectos/angel-giolitti/base-proyect.md) para las especificaciones de cada módulo.

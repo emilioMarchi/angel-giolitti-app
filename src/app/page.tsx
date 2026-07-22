@@ -1,31 +1,47 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { Play, Shuffle, Heart, MoreHorizontal, Clock, Disc3, CalendarDays, Film, Images, User, Headphones, CheckCircle2, Users } from 'lucide-react';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
+import { supabase } from '@/lib/supabase';
+import { getR2Url } from '@/lib/utils';
 
-/* ── Datos placeholder (TODO: reemplazar con queries a Supabase) ── */
-const popularTracks: Track[] = [
-  { id: '1', album_id: 'a1', title: 'Horizonte Infinito', audio_url: '', duration_seconds: 245, track_order: 1, album_title: 'Próximo Álbum', cover_url: '' },
-  { id: '2', album_id: 'a1', title: 'Ecos del Silencio', audio_url: '', duration_seconds: 198, track_order: 2, album_title: 'Próximo Álbum', cover_url: '' },
-  { id: '3', album_id: 'a2', title: 'Ciudad Nocturna', audio_url: '', duration_seconds: 312, track_order: 1, album_title: 'Nuevo Single', cover_url: '' },
-  { id: '4', album_id: 'a3', title: 'Despertar', audio_url: '', duration_seconds: 267, track_order: 1, album_title: 'EP Debut', cover_url: '' },
-  { id: '5', album_id: 'a1', title: 'Mareas', audio_url: '', duration_seconds: 223, track_order: 3, album_title: 'Próximo Álbum', cover_url: '' },
-];
+/* ── Interfaces para las queries ── */
+interface AlbumDB {
+  id: string;
+  title: string;
+  slug: string;
+  type: 'album' | 'ep' | 'single';
+  release_year: number;
+  cover_url: string | null;
+}
 
-const discography = [
-  { title: 'Próximo Álbum', subtitle: 'Álbum · 2026', type: 'album' },
-  { title: 'Nuevo Single', subtitle: 'Single · 2026', type: 'single' },
-  { title: 'EP Debut', subtitle: 'EP · 2025', type: 'ep' },
-  { title: 'Remixes Vol. 1', subtitle: 'Compilado · 2025', type: 'album' },
-  { title: 'Live Session', subtitle: 'En Vivo · 2026', type: 'single' },
-];
+interface TrackDB {
+  id: string;
+  album_id: string;
+  title: string;
+  audio_url: string;
+  duration_seconds: number;
+  track_order: number;
+  play_count: number;
+  albums: { title: string; cover_url: string | null } | null;
+}
 
-const upcomingEvents = [
-  { date: '15 AGO', title: 'Presentación en Vivo', location: 'Buenos Aires, Argentina', venue: 'Centro Cultural Kirchner' },
-  { date: '28 SEP', title: 'Festival de Música Independiente', location: 'Córdoba, Argentina', venue: 'Espacio Quality' },
-  { date: '10 OCT', title: 'Sesión Acústica Íntima', location: 'Rosario, Argentina', venue: 'El Cairo' },
-];
+interface EventDB {
+  id: string;
+  title: string;
+  slug: string;
+  location_name: string;
+  address_city: string;
+  event_date: string;
+  status: string;
+}
+
+interface ArtistProfileDB {
+  full_name: string;
+  short_bio: string;
+}
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return '0:00';
@@ -34,11 +50,95 @@ function formatDuration(seconds: number | null): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function formatEventDate(isoString: string): { day: string; month: string } {
+  const d = new Date(isoString);
+  return {
+    day: d.toLocaleDateString('es-ES', { day: '2-digit' }),
+    month: d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase(),
+  };
+}
+
 export default function HomePage() {
   const { playTrack, playQueue, currentTrack, isPlaying, togglePlay } = usePlayerStore();
+  const [popularTracks, setPopularTracks] = useState<Track[]>([]);
+  const [discography, setDiscography] = useState<AlbumDB[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventDB[]>([]);
+  const [artistBio, setArtistBio] = useState<string>('Músico · Compositor · Artista');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHomeData() {
+      try {
+        setLoading(true);
+
+        // 1. Tracks populares (top 5 por play_count, con datos del álbum)
+        const { data: tracksData } = await supabase
+          .from('tracks')
+          .select('id, album_id, title, audio_url, duration_seconds, track_order, play_count, albums(title, cover_url)')
+          .order('play_count', { ascending: false })
+          .limit(5);
+
+        if (tracksData && tracksData.length > 0) {
+          const mapped: Track[] = (tracksData as unknown as TrackDB[]).map((t) => ({
+            id: t.id,
+            album_id: t.album_id,
+            title: t.title,
+            audio_url: t.audio_url,
+            duration_seconds: t.duration_seconds,
+            track_order: t.track_order,
+            album_title: t.albums?.title || '',
+            cover_url: t.albums?.cover_url || undefined,
+          }));
+          setPopularTracks(mapped);
+        }
+
+        // 2. Últimos 5 álbumes
+        const { data: albumsData } = await supabase
+          .from('albums')
+          .select('id, title, slug, type, release_year, cover_url')
+          .order('release_year', { ascending: false })
+          .limit(5);
+
+        if (albumsData && albumsData.length > 0) {
+          setDiscography(albumsData as AlbumDB[]);
+        }
+
+        // 3. Próximos 3 eventos
+        const { data: eventsData } = await supabase
+          .from('events')
+          .select('id, title, slug, location_name, address_city, event_date, status')
+          .eq('status', 'upcoming')
+          .order('event_date', { ascending: true })
+          .limit(3);
+
+        if (eventsData && eventsData.length > 0) {
+          setUpcomingEvents(eventsData as EventDB[]);
+        }
+
+        // 4. Bio del artista
+        const { data: profileData } = await supabase
+          .from('artist_profile')
+          .select('full_name, short_bio')
+          .maybeSingle();
+
+        if (profileData) {
+          setArtistBio((profileData as ArtistProfileDB).short_bio || 'Músico · Compositor · Artista');
+        }
+
+      } catch (err) {
+        console.error('Error cargando datos del home:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchHomeData();
+  }, []);
 
   const handlePlayAll = () => {
-    playQueue(popularTracks, 0);
+    if (popularTracks.length > 0) {
+      playQueue(popularTracks, 0);
+    }
   };
 
   const handlePlayTrack = (track: Track) => {
@@ -49,13 +149,24 @@ export default function HomePage() {
     <div className="artist-profile">
       {/* ═══ HERO / CABECERA DEL ARTISTA (tipo Spotify) ═══ */}
       <header className="artist-hero">
-        {/* Gradiente de fondo (simula la portada) */}
-        <div className="artist-hero-bg" />
+        {/* Banner / Cover */}
+        <div className="artist-hero-bg">
+          <img
+            src={getR2Url('images/gallery/handangel/photo-3.webp')}
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        </div>
 
         <div className="artist-hero-content">
           {/* Foto de perfil */}
-          <div className="artist-avatar">
-            <User className="h-16 w-16 text-muted-foreground/60" />
+          <div className="artist-avatar overflow-hidden">
+            <img
+              src={getR2Url('images/gallery/handangel/photo-0.webp')}
+              alt="Ángel Giolitti"
+              className="w-full h-full object-cover"
+            />
           </div>
 
           {/* Info del artista */}
@@ -68,7 +179,7 @@ export default function HomePage() {
             <p className="artist-meta">
               <span className="artist-listeners">
                 <Users className="h-4 w-4" />
-                Músico · Compositor · Artista
+                {artistBio}
               </span>
             </p>
           </div>
@@ -96,49 +207,60 @@ export default function HomePage() {
         <h2 className="artist-section-title">Populares</h2>
 
         <div className="track-list">
-          {popularTracks.map((track, i) => {
-            const isCurrent = currentTrack?.id === track.id;
-            return (
-              <div
-                key={track.id}
-                className={`track-row ${isCurrent ? 'track-row--active' : ''}`}
-                onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
-              >
-                <div className="track-row-number">
-                  {isCurrent && isPlaying ? (
-                    <div className="track-eq">
-                      <span /><span /><span /><span />
+          {popularTracks.length > 0 ? (
+            popularTracks.map((track, i) => {
+              const isCurrent = currentTrack?.id === track.id;
+              return (
+                <div
+                  key={track.id}
+                  className={`track-row ${isCurrent ? 'track-row--active' : ''}`}
+                  onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
+                >
+                  <div className="track-row-number">
+                    {isCurrent && isPlaying ? (
+                      <div className="track-eq">
+                        <span /><span /><span /><span />
+                      </div>
+                    ) : (
+                      <span className="track-index">{i + 1}</span>
+                    )}
+                    <Play className="track-play-icon" fill="currentColor" />
+                  </div>
+
+                  <div className="track-row-info">
+                    <div className="track-row-cover">
+                      {track.cover_url ? (
+                        <img src={getR2Url(track.cover_url)} alt={track.album_title} className="w-full h-full object-cover rounded" />
+                      ) : (
+                        <Disc3 className="h-5 w-5 text-muted-foreground/40" />
+                      )}
                     </div>
-                  ) : (
-                    <span className="track-index">{i + 1}</span>
-                  )}
-                  <Play className="track-play-icon" fill="currentColor" />
-                </div>
-
-                <div className="track-row-info">
-                  <div className="track-row-cover">
-                    <Disc3 className="h-5 w-5 text-muted-foreground/40" />
+                    <div className="track-row-text">
+                      <span className={`track-row-title ${isCurrent ? 'text-primary' : ''}`}>
+                        {track.title}
+                      </span>
+                      <span className="track-row-album">{track.album_title}</span>
+                    </div>
                   </div>
-                  <div className="track-row-text">
-                    <span className={`track-row-title ${isCurrent ? 'text-primary' : ''}`}>
-                      {track.title}
-                    </span>
-                    <span className="track-row-album">{track.album_title}</span>
+
+                  <div className="track-row-actions">
+                    <button className="track-like-btn" aria-label="Me gusta">
+                      <Heart className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
 
-                <div className="track-row-actions">
-                  <button className="track-like-btn" aria-label="Me gusta">
-                    <Heart className="h-4 w-4" />
-                  </button>
+                  <span className="track-row-duration">
+                    {formatDuration(track.duration_seconds)}
+                  </span>
                 </div>
-
-                <span className="track-row-duration">
-                  {formatDuration(track.duration_seconds)}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : !loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Headphones className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+              <p className="text-sm">Los tracks se mostrarán aquí.</p>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -149,52 +271,62 @@ export default function HomePage() {
           <Link href="/musica" className="home-section-link">Mostrar todo</Link>
         </div>
 
-        {/* TODO: Reemplazar con datos de Supabase (tabla albums) */}
         <div className="home-cards-row">
-          {discography.map((item, i) => (
-            <div key={i} className="album-card">
+          {discography.map((album) => (
+            <Link key={album.id} href={`/musica/${album.slug}`} className="album-card">
               <div className="album-card-cover">
-                <Disc3 className="h-10 w-10 text-muted-foreground/40" />
-                <button className="album-card-play" aria-label={`Reproducir ${item.title}`}>
+                {album.cover_url ? (
+                  <img src={getR2Url(album.cover_url)} alt={album.title} className="w-full h-full object-cover" />
+                ) : (
+                  <Disc3 className="h-10 w-10 text-muted-foreground/40" />
+                )}
+                <button className="album-card-play" aria-label={`Reproducir ${album.title}`}>
                   <Play className="h-5 w-5" fill="currentColor" />
                 </button>
               </div>
-              <h3 className="album-card-title">{item.title}</h3>
-              <p className="album-card-subtitle">{item.subtitle}</p>
-            </div>
+              <h3 className="album-card-title">{album.title}</h3>
+              <p className="album-card-subtitle">
+                {album.type === 'album' ? 'Álbum' : album.type === 'ep' ? 'EP' : 'Single'} · {album.release_year}
+              </p>
+            </Link>
           ))}
         </div>
       </section>
 
       {/* ═══ PRÓXIMAS FECHAS ═══ */}
-      <section className="artist-section">
-        <div className="home-section-header">
-          <h2 className="artist-section-title">En Concierto</h2>
-          <Link href="/eventos" className="home-section-link">Mostrar todo</Link>
-        </div>
+      {upcomingEvents.length > 0 && (
+        <section className="artist-section">
+          <div className="home-section-header">
+            <h2 className="artist-section-title">En Concierto</h2>
+            <Link href="/eventos" className="home-section-link">Mostrar todo</Link>
+          </div>
 
-        <div className="events-list">
-          {upcomingEvents.map((event, i) => (
-            <div key={i} className="event-row">
-              <div className="event-date-badge">
-                <span className="event-date-day">{event.date.split(' ')[0]}</span>
-                <span className="event-date-month">{event.date.split(' ')[1]}</span>
-              </div>
-              <div className="event-info">
-                <h3 className="event-title">{event.title}</h3>
-                <p className="event-location">
-                  <CalendarDays className="h-3 w-3" />
-                  {event.venue} · {event.location}
-                </p>
-              </div>
-              <div className="event-action">
-                <span className="event-action-text">Ver detalles</span>
-                <span className="event-action-arrow">→</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+          <div className="events-list">
+            {upcomingEvents.map((event) => {
+              const { day, month } = formatEventDate(event.event_date);
+              return (
+                <Link key={event.id} href="/eventos" className="event-row">
+                  <div className="event-date-badge">
+                    <span className="event-date-day">{day}</span>
+                    <span className="event-date-month">{month}</span>
+                  </div>
+                  <div className="event-info">
+                    <h3 className="event-title">{event.title}</h3>
+                    <p className="event-location">
+                      <CalendarDays className="h-3 w-3" />
+                      {event.location_name} · {event.address_city}
+                    </p>
+                  </div>
+                  <div className="event-action">
+                    <span className="event-action-text">Ver detalles</span>
+                    <span className="event-action-arrow">→</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ═══ ACCESO RÁPIDO ═══ */}
       <section className="artist-section">

@@ -1,2 +1,1 @@
-ailed to load resource: the server responded with a status of 406 ()
-wuxjeiszronyhajkmhjf.supabase.co/rest/v1/artist_profile?select=*:1  Failed to load resource: the server responded with a status of 406 ()
+https://pub-319a9d74deeb4bcebc10ae6384cf79b3.r2.dev/images/profile/handangel.webp

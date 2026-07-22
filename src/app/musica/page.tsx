@@ -16,18 +16,34 @@ import {
 import Link from 'next/link';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
+import { getR2Url } from '@/lib/utils';
 
-// Interfaces locales extendidas
-interface Album {
+// Interfaces locales alineadas con la DB real
+interface AlbumDB {
   id: string;
+  project_id: string | null;
   title: string;
   slug: string;
-  release_date: string;
-  cover_url: string;
-  description: string;
-  album_type: 'album' | 'ep' | 'single';
-  is_published: boolean;
-  tracks?: Track[];
+  type: 'album' | 'ep' | 'single';
+  release_year: number;
+  cover_url: string | null;
+  description: string | null;
+  members: unknown[];
+  created_at: string;
+  tracks?: TrackDB[];
+}
+
+interface TrackDB {
+  id: string;
+  album_id: string;
+  title: string;
+  slug: string;
+  audio_url: string;
+  duration_seconds: number;
+  track_order: number;
+  play_count: number;
+  likes_count: number;
+  created_at: string;
 }
 
 interface Playlist {
@@ -38,54 +54,17 @@ interface Playlist {
   tracks: Track[];
 }
 
-// Datos Mock (Fallback en caso de que la DB esté vacía)
-const mockAlbums: Album[] = [
-  {
-    id: 'alb-1',
-    title: 'Horizonte Infinito',
-    slug: 'horizonte-infinito',
-    release_date: '2026-03-15',
-    cover_url: '',
-    description: 'Un viaje a través de texturas electrónicas profundas y ritmos hipnóticos.',
-    album_type: 'album',
-    is_published: true,
-    tracks: [
-      { id: 't-101', album_id: 'alb-1', title: 'Horizonte Infinito', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration_seconds: 372, track_order: 1, album_title: 'Horizonte Infinito' },
-      { id: 't-102', album_id: 'alb-1', title: 'Ecos del Silencio', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', duration_seconds: 298, track_order: 2, album_title: 'Horizonte Infinito' },
-      { id: 't-103', album_id: 'alb-1', title: 'Luz Estelar', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', duration_seconds: 341, track_order: 3, album_title: 'Horizonte Infinito' },
-      { id: 't-104', album_id: 'alb-1', title: 'Mareas Altas', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', duration_seconds: 412, track_order: 4, album_title: 'Horizonte Infinito' },
-      { id: 't-105', album_id: 'alb-1', title: 'Viento Solar', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', duration_seconds: 315, track_order: 5, album_title: 'Horizonte Infinito' }
-    ]
-  },
-  {
-    id: 'alb-2',
-    title: 'Analog Pulse',
-    slug: 'analog-pulse',
-    release_date: '2025-08-22',
-    cover_url: '',
-    description: 'Exploraciones modulares grabadas completamente en vivo en el estudio.',
-    album_type: 'ep',
-    is_published: true,
-    tracks: [
-      { id: 't-201', album_id: 'alb-2', title: 'Analog Pulse (Intro)', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', duration_seconds: 124, track_order: 1, album_title: 'Analog Pulse' },
-      { id: 't-202', album_id: 'alb-2', title: 'Frecuencia Modulada', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', duration_seconds: 356, track_order: 2, album_title: 'Analog Pulse' },
-      { id: 't-203', album_id: 'alb-2', title: 'Voltaje Controlado', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', duration_seconds: 402, track_order: 3, album_title: 'Analog Pulse' }
-    ]
-  },
-  {
-    id: 'alb-3',
-    title: 'Ciudad Nocturna',
-    slug: 'ciudad-nocturna',
-    release_date: '2026-06-01',
-    cover_url: '',
-    description: 'Single debut y banda sonora urbana para la noche contemporánea.',
-    album_type: 'single',
-    is_published: true,
-    tracks: [
-      { id: 't-301', album_id: 'alb-3', title: 'Ciudad Nocturna', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', duration_seconds: 288, track_order: 1, album_title: 'Ciudad Nocturna' }
-    ]
-  }
-];
+// Interfaz local para el render (con datos enriquecidos)
+interface AlbumView {
+  id: string;
+  title: string;
+  slug: string;
+  type: 'album' | 'ep' | 'single';
+  release_year: number;
+  cover_url: string | null;
+  description: string | null;
+  tracks: Track[];
+}
 
 const mockPlaylists: Playlist[] = [
   {
@@ -118,15 +97,38 @@ function formatDuration(seconds: number | null): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function getYear(dateString: string): string {
-  return dateString ? new Date(dateString).getFullYear().toString() : '';
+// Convierte un AlbumDB de Supabase a un AlbumView enriquecido para el render
+function mapAlbumToView(dbAlbum: AlbumDB): AlbumView {
+  const tracks: Track[] = (dbAlbum.tracks || [])
+    .sort((a, b) => a.track_order - b.track_order)
+    .map((t) => ({
+      id: t.id,
+      album_id: t.album_id,
+      title: t.title,
+      audio_url: getR2Url(t.audio_url),
+      duration_seconds: t.duration_seconds,
+      track_order: t.track_order,
+      album_title: dbAlbum.title,
+      cover_url: getR2Url(dbAlbum.cover_url) || undefined,
+    }));
+
+  return {
+    id: dbAlbum.id,
+    title: dbAlbum.title,
+    slug: dbAlbum.slug,
+    type: dbAlbum.type,
+    release_year: dbAlbum.release_year,
+    cover_url: getR2Url(dbAlbum.cover_url),
+    description: dbAlbum.description,
+    tracks,
+  };
 }
 
 export default function MusicaPage() {
   const { playTrack, playQueue, currentTrack, isPlaying, togglePlay } = usePlayerStore();
-  const [albums, setAlbums] = useState<Album[]>(mockAlbums);
-  const [playlists, setPlaylists] = useState<Playlist[]>(mockPlaylists);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [albums, setAlbums] = useState<AlbumView[]>([]);
+  const [playlists] = useState<Playlist[]>(mockPlaylists);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumView | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -134,21 +136,17 @@ export default function MusicaPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        // Intentar traer álbumes reales de Supabase
         const { data: dbAlbums, error: albumsError } = await supabase
           .from('albums')
           .select('*, tracks(*)')
-          .eq('is_published', true);
+          .order('release_year', { ascending: false });
 
         if (!albumsError && dbAlbums && dbAlbums.length > 0) {
-          // Ordenar álbumes por fecha de lanzamiento (descendiente)
-          const sorted = [...dbAlbums].sort(
-            (a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
-          );
-          setAlbums(sorted);
+          const mapped = (dbAlbums as AlbumDB[]).map(mapAlbumToView);
+          setAlbums(mapped);
         }
       } catch (err) {
-        console.error('Error al cargar datos de Supabase, usando mocks:', err);
+        console.error('Error al cargar datos de Supabase:', err);
       } finally {
         setLoading(false);
       }
@@ -199,12 +197,12 @@ export default function MusicaPage() {
           </div>
           
           <div className="flex-1">
-            <span className="text-xs uppercase font-bold tracking-widest text-primary">{selectedAlbum.album_type}</span>
+            <span className="text-xs uppercase font-bold tracking-widest text-primary">{selectedAlbum.type}</span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-black mt-2 mb-4 leading-tight">{selectedAlbum.title}</h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-bold text-white">Ángel Giolitti</span>
               <span>•</span>
-              <span>{getYear(selectedAlbum.release_date)}</span>
+              <span>{selectedAlbum.release_year}</span>
               <span>•</span>
               <span>{tracks.length} {tracks.length === 1 ? 'canción' : 'canciones'}</span>
               <span>•</span>
@@ -403,14 +401,13 @@ export default function MusicaPage() {
         <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Álbumes y EPs</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {albums
-            .filter(a => a.album_type === 'album' || a.album_type === 'ep')
+            .filter(a => a.type === 'album' || a.type === 'ep')
             .map((album) => (
               <div 
                 key={album.id}
-                onClick={() => setSelectedAlbum(album)}
                 className="album-card group cursor-pointer"
               >
-                <div className="album-card-cover relative">
+                <Link href={`/musica/${album.slug}`} className="album-card-cover relative block">
                   {album.cover_url ? (
                     <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
                   ) : (
@@ -418,6 +415,7 @@ export default function MusicaPage() {
                   )}
                   <button 
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       handlePlayCollection(album.tracks || []);
                     }}
@@ -426,12 +424,12 @@ export default function MusicaPage() {
                   >
                     <Play className="h-5 w-5" fill="currentColor" />
                   </button>
-                </div>
+                </Link>
                 <h3 className="album-card-title mt-3">{album.title}</h3>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-xs font-bold text-primary uppercase">{album.album_type}</span>
+                  <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
                   <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{getYear(album.release_date)}</span>
+                  <span className="text-xs text-muted-foreground">{album.release_year}</span>
                 </div>
               </div>
             ))}
@@ -443,14 +441,13 @@ export default function MusicaPage() {
         <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Sencillos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {albums
-            .filter(a => a.album_type === 'single')
+            .filter(a => a.type === 'single')
             .map((album) => (
               <div 
                 key={album.id}
-                onClick={() => setSelectedAlbum(album)}
                 className="album-card group cursor-pointer"
               >
-                <div className="album-card-cover relative">
+                <Link href={`/musica/${album.slug}`} className="album-card-cover relative block">
                   {album.cover_url ? (
                     <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
                   ) : (
@@ -458,6 +455,7 @@ export default function MusicaPage() {
                   )}
                   <button 
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       handlePlayCollection(album.tracks || []);
                     }}
@@ -466,12 +464,12 @@ export default function MusicaPage() {
                   >
                     <Play className="h-5 w-5" fill="currentColor" />
                   </button>
-                </div>
+                </Link>
                 <h3 className="album-card-title mt-3">{album.title}</h3>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-xs font-bold text-primary uppercase">{album.album_type}</span>
+                  <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
                   <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{getYear(album.release_date)}</span>
+                  <span className="text-xs text-muted-foreground">{album.release_year}</span>
                 </div>
               </div>
             ))}
