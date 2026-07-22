@@ -153,10 +153,11 @@ flowchart TD
 * **Paso 3.5: Módulo Galería Multimedia (`/galeria`)**
   * Álbumes de fotos clasificadas (Conciertos, Sesiones, Backstage).
   * Visualizador Lightbox en pantalla completa con navegación entre imágenes.
-* **Paso 3.6: Módulo Biografía & Dossier (`/bio`)**
+* **[x] Paso 3.6: Módulo Biografía & Dossier (`/bio`) (Completado)**
   * Biografía completa redactada con opción de lectura expandible.
   * Sección de descargas: Dossier de prensa PDF y CV del artista (alojados en R2).
   * Enlaces a redes sociales y contacto oficial.
+  * **Corregido error 406 en Supabase**: Cambiado `.single()` por `.maybeSingle()` en `src/app/bio/page.tsx` para manejar tabla `artist_profile` vacía sin error 406.
 * **Paso 3.7: Migración de Datos del Proyecto Anterior**
   * Análisis y estructura del JSON de metadata existente (mapeo de tablas y campos).
   * Definición de estructura de carpetas en Cloudflare R2: `tracks/`, `images/gallery/`, `images/projects/`, `images/albums/`, `images/profile/`.
