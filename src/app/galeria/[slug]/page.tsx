@@ -228,8 +228,6 @@ export default function GalleryAlbumPage() {
             </p>
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-            <span className="font-bold text-white">Ángel Giolitti</span>
-            <span>•</span>
             <span>
               {album.items.length} {album.items.length === 1 ? 'archivo' : 'archivos'}
             </span>

@@ -2,27 +2,25 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import {
-  Image as ImageIcon,
-  ArrowLeft,
-  Play,
-  Camera,
-  Calendar,
-  MapPin,
-  Clock,
-  Ticket,
+import { 
+  User, 
+  MapPin, 
+  MessageSquare, 
+  Send, 
+  Music, 
+  Globe, 
+  FileText, 
+  Download, 
+  Calendar, 
+  Heart, 
   ExternalLink,
-  Music,
-  FileText,
-  Heart,
-  Globe,
-  User,
-  Download,
-  MessageSquare,
-  Send,
+  CheckCircle2,
+  Users,
+  Disc3,
+  Play,
 } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
+import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
 
 interface ArtistProfile {
@@ -45,6 +43,15 @@ interface ArtistProfile {
   cv_pdf_url: string;
   created_at: string;
   updated_at: string;
+}
+
+interface AlbumDB {
+  id: string;
+  title: string;
+  slug: string;
+  type: 'album' | 'ep' | 'single';
+  release_year: number;
+  cover_url: string | null;
 }
 
 const mockProfile: ArtistProfile = {
@@ -80,6 +87,7 @@ Su discografía incluye los álbumes *«Horizonte Infinito»* (2025), *«Ciudad 
 export default function BioPage() {
   const { isPlaying, setPlaying } = usePlayerStore();
   const [profile, setProfile] = useState<ArtistProfile>(mockProfile);
+  const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -140,6 +148,30 @@ export default function BioPage() {
       }
     }
     fetchProfile();
+  }, []);
+
+  // Fetch albums for discography
+  useEffect(() => {
+    async function fetchAlbums() {
+      try {
+        const { data, error } = await supabase
+          .from('albums')
+          .select('id, title, slug, type, release_year, cover_url')
+          .order('release_year', { ascending: false })
+          .limit(6);
+
+        if (!error && data) {
+          const mapped = data.map((a: any) => ({
+            ...a,
+            cover_url: getR2Url(a.cover_url)
+          }));
+          setAlbums(mapped);
+        }
+      } catch (err) {
+        console.error('Error fetching albums for bio:', err);
+      }
+    }
+    fetchAlbums();
   }, []);
 
   if (loading) {
@@ -232,7 +264,7 @@ export default function BioPage() {
           </div>
         </section>
 
-        {/* Discografía Destacada */}
+{/* Discografía Destacada */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -243,39 +275,52 @@ export default function BioPage() {
               Ver todo <ExternalLink className="h-3 w-3" />
             </a>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { title: 'Horizonte Infinito', year: '2025', type: 'Álbum', cover: '' },
-              { title: 'Ciudad Nocturna', year: '2023', type: 'Álbum', cover: '' },
-              { title: 'Estructuras de Luz', year: '2021', type: 'Álbum', cover: '' },
-              { title: 'Sesiones Ámbar Vol. 1', year: '2024', type: 'EP', cover: '' },
-              { title: 'Field Recordings BA', year: '2022', type: 'EP', cover: '' },
-              { title: 'Modular Dreams', year: '2020', type: 'Single', cover: '' },
-            ].map((release, i) => (
-              <Link
-                key={i}
-                href="/musica"
-                className="group flex gap-4 p-4 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
-              >
-                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
-                  {release.cover ? (
-                    <img src={release.cover} alt={release.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <Music className="h-8 w-8 text-primary/30" />
-                  )}
-                  <span className="absolute bottom-1 right-1 text-[10px] font-black uppercase text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
-                    {release.type}
-                  </span>
+          <div className="space-y-3">
+            {albums.length > 0 ? (
+              albums.map((album) => (
+                <Link
+                  key={album.id}
+                  href={`/musica/${album.slug}`}
+                  className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
+                >
+                  <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
+                    {album.cover_url ? (
+                      <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Disc3 className="h-8 w-8 text-primary/30" />
+                    )}
+                    <span className="absolute bottom-1 right-1 text-[10px] font-black uppercase text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
+                      {album.type === 'album' ? 'ÁLBUM' : album.type === 'ep' ? 'EP' : 'SINGLE'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight">{album.title}</h3>
+                      <p className="text-sm text-muted-foreground">{album.release_year} · {album.type === 'album' ? 'Álbum' : album.type === 'ep' ? 'EP' : 'Single'}</p>
+                    </div>
+                    <button
+                      className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
+                      aria-label="Reproducir"
+                    >
+                      <Play className="h-5 w-5" fill="currentColor" />
+                    </button>
+                  </div>
+                </Link>
+              ))
+) : (
+              [1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 animate-pulse">
+                  <div className="w-20 h-20 rounded-lg bg-white/5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div>
+                      <div className="h-5 bg-white/5 rounded w-3/4 mb-2" />
+                      <div className="h-4 bg-white/5 rounded w-1/2" />
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100" />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-white group-hover:text-primary transition-colors truncate">{release.title}</h3>
-                  <p className="text-sm text-muted-foreground">{release.year} · {release.type}</p>
-                </div>
-                <button className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100" aria-label="Reproducir">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-              </Link>
-            ))}
+              ))
+            )}
           </div>
         </section>
 

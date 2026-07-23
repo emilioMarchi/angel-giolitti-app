@@ -421,45 +421,49 @@ export default function MusicaPage() {
         </p>
       </div>
 
-      {/* ── SECCIÓN ÁLBUMES Y EPS ── */}
+{/* ── SECCIÓN ÁLBUMES Y EPS ── */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Álbumes y EPs</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
           {albums
             .filter(a => a.type === 'album' || a.type === 'ep')
             .map((album) => (
-              <div 
+              <Link
                 key={album.id}
-                className="album-card group cursor-pointer"
+                href={`/musica/${album.slug}`}
+                className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
               >
-                <Link href={`/musica/${album.slug}`} className="album-card-cover relative block">
+                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
                   {album.cover_url ? (
                     <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
                   ) : (
-                    <Disc3 className="h-12 w-12 text-muted-foreground/30 transition-colors group-hover:text-primary/70" />
+                    <Disc3 className="h-8 w-8 text-primary/30" />
                   )}
-                  <button 
+                  <span className="absolute bottom-1 right-1 text-[10px] font-black uppercase text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
+                    {album.type === 'album' ? 'ÁLBUM' : 'EP'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight">{album.title}</h3>
+                    <p className="text-sm text-muted-foreground">{album.release_year} · {album.type === 'album' ? 'Álbum' : 'EP'}</p>
+                    {album.project_title && (
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
+                    )}
+                  </div>
+                  <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handlePlayCollection(album.tracks || []);
                     }}
-                    className="album-card-play" 
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
                     aria-label={`Reproducir ${album.title}`}
                   >
                     <Play className="h-5 w-5" fill="currentColor" />
                   </button>
-                </Link>
-                <h3 className="album-card-title mt-3">{album.title}</h3>
-                {album.project_title && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
-                )}
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{album.release_year}</span>
                 </div>
-              </div>
+              </Link>
             ))}
         </div>
       </section>
@@ -467,42 +471,46 @@ export default function MusicaPage() {
       {/* ── SECCIÓN SENCILLOS (SINGLES) ── */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Sencillos</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
           {albums
             .filter(a => a.type === 'single')
             .map((album) => (
-              <div 
+              <Link
                 key={album.id}
-                className="album-card group cursor-pointer"
+                href={`/musica/${album.slug}`}
+                className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
               >
-                <Link href={`/musica/${album.slug}`} className="album-card-cover relative block">
+                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
                   {album.cover_url ? (
                     <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
                   ) : (
-                    <Disc3 className="h-12 w-12 text-muted-foreground/30 transition-colors group-hover:text-primary/70" />
+                    <Disc3 className="h-8 w-8 text-primary/30" />
                   )}
-                  <button 
+                  <span className="absolute bottom-1 right-1 text-[10px] font-black uppercase text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
+                    SINGLE
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight">{album.title}</h3>
+                    <p className="text-sm text-muted-foreground">{album.release_year} · Single</p>
+                    {album.project_title && (
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
+                    )}
+                  </div>
+                  <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handlePlayCollection(album.tracks || []);
                     }}
-                    className="album-card-play" 
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
                     aria-label={`Reproducir ${album.title}`}
                   >
                     <Play className="h-5 w-5" fill="currentColor" />
                   </button>
-                </Link>
-                <h3 className="album-card-title mt-3">{album.title}</h3>
-                {album.project_title && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
-                )}
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{album.release_year}</span>
                 </div>
-              </div>
+              </Link>
             ))}
         </div>
       </section>
