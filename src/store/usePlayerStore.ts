@@ -35,6 +35,7 @@ interface PlayerState {
   setDuration: (duration: number) => void;
   clearQueue: () => void;
   addToQueue: (track: Track) => void;
+  setTrack: (track: Track, newQueue?: Track[]) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -124,6 +125,14 @@ export const usePlayerStore = create<PlayerState>()(
       setDuration: (duration) => set({ duration }),
 
       clearQueue: () => set({ queue: [], currentIndex: -1, currentTrack: null, isPlaying: false, progress: 0, duration: 0 }),
+
+      setTrack: (track: Track, newQueue?: Track[]) => set({
+        currentTrack: track,
+        queue: newQueue || [track],
+        currentIndex: 0,
+        isPlaying: false,
+        progress: 0,
+      }),
 
       addToQueue: (track) => {
         const { queue } = get();

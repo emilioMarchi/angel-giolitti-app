@@ -87,8 +87,7 @@ export default function GlobalAudioPlayer() {
               cover_url: undefined,
             };
           }
-          store.playTrack(track, [track]);
-          store.setPlaying(false);
+          store.setTrack(track, [track]);
         });
     }
   }, []);
