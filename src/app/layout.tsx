@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import GlobalAudioPlayer from "@/components/GlobalAudioPlayer";
+import ScrollRestorer from "@/components/ScrollRestorer";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html
       lang="es"
       className={`${inter.variable} ${outfit.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="spotify-layout">
         {/* ── Sidebar lateral izquierda ── */}
@@ -43,6 +45,7 @@ export default function RootLayout({
         <main className="main-view">
           <TopBar />
           <div className="main-view-content">
+            <ScrollRestorer />
             {children}
           </div>
         </main>

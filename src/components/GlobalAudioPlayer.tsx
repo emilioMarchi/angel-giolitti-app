@@ -61,9 +61,11 @@ export default function GlobalAudioPlayer() {
         .eq('audio_url', defaultAudioUrl)
         .single()
         .then(({ data }) => {
+          const store = usePlayerStore.getState();
+          let track: Track;
           if (data) {
             const t = data as any;
-            const track: Track = {
+            track = {
               id: t.id,
               album_id: t.album_id,
               title: t.title,
@@ -73,10 +75,8 @@ export default function GlobalAudioPlayer() {
               album_title: t.albums?.title || '',
               cover_url: getR2Url(t.albums?.cover_url) || undefined,
             };
-            usePlayerStore.getState().playTrack(track, [track]);
           } else {
-            // Fallback si no existe en la DB
-            const track: Track = {
+            track = {
               id: 'default-patio-colibri',
               album_id: null,
               title: 'Patio Colibrí',
@@ -86,13 +86,38 @@ export default function GlobalAudioPlayer() {
               album_title: '',
               cover_url: undefined,
             };
-            usePlayerStore.getState().playTrack(track, [track]);
           }
+          store.playTrack(track, [track]);
         });
     }
   }, []);
 
   // Sincronizar src del audio cuando cambia el track
+  const hasInteracted = useRef(false);
+
+  // Desmutear en el primer click/touch del usuario
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleInteraction = () => {
+      if (!hasInteracted.current) {
+        hasInteracted.current = true;
+        audio.muted = false;
+        audio.volume = volume;
+        document.removeEventListener('click', handleInteraction);
+        document.removeEventListener('touchstart', handleInteraction);
+      }
+    };
+
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction);
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+    };
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
@@ -110,9 +135,12 @@ export default function GlobalAudioPlayer() {
     if (!audio || !currentTrack) return;
 
     if (isPlaying) {
-      audio.play().catch(() => {
-        // Autoplay bloqueado por el navegador
-      });
+      if (!hasInteracted.current) {
+        audio.muted = true;
+      } else {
+        audio.muted = false;
+      }
+      audio.play().catch(() => {});
     } else {
       audio.pause();
     }

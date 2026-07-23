@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Play, Shuffle, Heart, MoreHorizontal, Clock, Disc3, CalendarDays, Film, Images, User, Headphones, CheckCircle2, Users } from 'lucide-react';
+import { Play, Shuffle, Heart, MoreHorizontal, Clock, Disc3, CalendarDays, Clapperboard, Images, User, Headphones, CheckCircle2, Users } from 'lucide-react';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
@@ -333,7 +333,7 @@ export default function HomePage() {
         <h2 className="artist-section-title">Explorar</h2>
         <div className="home-quick-access">
           {[
-            { title: 'Proyectos Audiovisuales', href: '/proyectos', color: 'var(--accent-blue)', icon: Film },
+            { title: 'Proyectos', href: '/proyectos', color: 'var(--accent-blue)', icon: Clapperboard },
             { title: 'Galería de Fotos', href: '/galeria', color: 'var(--accent-orange)', icon: Images },
             { title: 'Biografía Completa', href: '/bio', color: 'var(--accent-pink)', icon: User },
           ].map((item, i) => {

@@ -117,7 +117,7 @@ export default function EventosPage() {
   if (selectedEvent) {
     const isPast = selectedEvent.status === 'completed';
     return (
-      <div className="music-detail-view px-6 py-6 animate-fade-in pb-24">
+      <div className="music-detail-view px-6 py-6 animate-fade-in pb-24 overflow-hidden">
         <button 
           onClick={() => setSelectedEvent(null)}
           className="flex items-center gap-2 mb-8 text-muted-foreground hover:text-white transition-colors font-semibold text-sm"
@@ -147,11 +147,11 @@ export default function EventosPage() {
           </div>
           
           {/* Info del evento */}
-          <div className="flex-1 pt-2">
+          <div className="flex-1 pt-2 min-w-0">
             <span className="text-xs uppercase font-bold tracking-widest text-primary mb-2 block">
               {isPast ? 'Fecha Finalizada' : 'Próxima Presentación'}
             </span>
-            <h1 className="text-3xl md:text-5xl font-black mb-6 leading-tight text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black mb-6 leading-tight text-white break-words pr-4">
               {selectedEvent.title}
             </h1>
             
@@ -210,7 +210,7 @@ export default function EventosPage() {
 
   // Listado general estilo Spotify
   return (
-    <div className="events-tab-view px-6 py-6 pb-24">
+    <div className="events-tab-view px-6 py-6 pb-24 overflow-hidden">
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 flex items-center gap-3">
@@ -241,8 +241,8 @@ export default function EventosPage() {
                 </div>
 
                 {/* Info principal de la fila */}
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <h3 className="text-lg font-bold text-white truncate group-hover:text-primary transition-colors">
+                <div className="flex-1 min-w-0 flex flex-col pr-2">
+                  <h3 className="text-lg font-bold text-white line-clamp-2 group-hover:text-primary transition-colors">
                     {event.title}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
@@ -302,7 +302,7 @@ export default function EventosPage() {
                   <span className="text-lg font-black text-muted-foreground">{getDay(event.event_date)}</span>
                 </div>
 
-                <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
                   <h3 className="text-base font-bold text-muted-foreground truncate group-hover:text-white transition-colors">
                     {event.title}
                   </h3>

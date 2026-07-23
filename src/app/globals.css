@@ -1284,15 +1284,9 @@
 }
 
 .player-volume-group {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 4px;
-}
-
-@media (min-width: 640px) {
-  .player-volume-group {
-    display: flex;
-  }
 }
 
 .player-volume-bar {
@@ -1305,6 +1299,9 @@
 
 .player-volume-bar:hover {
   height: 6px;
+}
+
+@media (max-width: 639px) {
 }
 
 .player-volume-bg {
@@ -1352,7 +1349,7 @@
 @media (max-width: 768px) {
   .spotify-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 72px;
+    grid-template-rows: 1fr auto;
     height: 100vh;
     height: 100dvh;
     padding: 0;
@@ -1368,22 +1365,24 @@
     overflow-x: hidden;
   }
 
+  .main-view-content {
+    padding-bottom: 140px;
+  }
+
   .player-bar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 16px 12px;
     height: auto;
     position: relative;
-    padding-bottom: 12px;
-    overflow: hidden;
+    gap: 4px;
   }
 
   .player-track-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1;
     min-width: 0;
   }
 
@@ -1413,6 +1412,9 @@
   }
 
   .player-controls-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     max-width: unset;
     width: auto;
     min-width: 0;
@@ -1430,12 +1432,8 @@
     display: none;
   }
 
-  /* Barra de progreso fija al fondo */
+  /* Barra de progreso al fondo */
   .player-progress-row {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
     padding: 0;
     margin: 0;
   }
@@ -1456,7 +1454,10 @@
   }
 
   .player-controls-right {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
   }
 
   .home-quick-access {
