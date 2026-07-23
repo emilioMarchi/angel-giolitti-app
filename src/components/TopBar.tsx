@@ -26,10 +26,10 @@ export default function TopBar() {
   return (
     <>
       <header className="topbar">
-        {/* Logo - Lado izquierdo */}
+        {/* Logo - Lado izquierdo (solo mobile, en desktop está en sidebar) */}
         <Link
           href="/"
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 md:hidden"
         >
           <span className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading), var(--font-sans), sans-serif' }}>
             <span className="text-primary">Á</span>ngel{' '}
