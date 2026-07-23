@@ -29,6 +29,7 @@ interface AlbumDB {
   cover_url: string | null;
   description: string | null;
   members: unknown[];
+  project: { title: string; members: Array<{ name: string; roll: string[] }> } | null;
   created_at: string;
   tracks?: TrackDB[];
 }
@@ -63,6 +64,8 @@ interface AlbumView {
   release_year: number;
   cover_url: string | null;
   description: string | null;
+  project_title: string | null;
+  members: Array<{ name: string; roll: string[] }>;
   tracks: Track[];
 }
 
@@ -112,6 +115,11 @@ function mapAlbumToView(dbAlbum: AlbumDB): AlbumView {
       cover_url: getR2Url(dbAlbum.cover_url) || undefined,
     }));
 
+  // Heredar miembros del proyecto si el álbum no tiene los suyos
+  const albumMembers = (dbAlbum.members as Array<{ name: string; roll: string[] }>) || [];
+  const projectMembers = (dbAlbum.project?.members as Array<{ name: string; roll: string[] }>) || [];
+  const members = albumMembers.length > 0 ? albumMembers : projectMembers;
+
   return {
     id: dbAlbum.id,
     title: dbAlbum.title,
@@ -120,6 +128,8 @@ function mapAlbumToView(dbAlbum: AlbumDB): AlbumView {
     release_year: dbAlbum.release_year,
     cover_url: getR2Url(dbAlbum.cover_url),
     description: dbAlbum.description,
+    project_title: dbAlbum.project?.title || null,
+    members,
     tracks,
   };
 }
@@ -138,7 +148,7 @@ export default function MusicaPage() {
         setLoading(true);
         const { data: dbAlbums, error: albumsError } = await supabase
           .from('albums')
-          .select('*, tracks(*)')
+          .select('*, tracks(*), project:projects(title, members)')
           .order('release_year', { ascending: false });
 
         if (!albumsError && dbAlbums && dbAlbums.length > 0) {
@@ -199,15 +209,30 @@ export default function MusicaPage() {
           <div className="flex-1">
             <span className="text-xs uppercase font-bold tracking-widest text-primary">{selectedAlbum.type}</span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-black mt-2 mb-4 leading-tight">{selectedAlbum.title}</h1>
+            {selectedAlbum.project_title && (
+              <p className="text-sm text-primary/90 font-medium mb-2">{selectedAlbum.project_title}</p>
+            )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-bold text-white">Ángel Giolitti</span>
-              <span>•</span>
               <span>{selectedAlbum.release_year}</span>
               <span>•</span>
               <span>{tracks.length} {tracks.length === 1 ? 'canción' : 'canciones'}</span>
               <span>•</span>
               <span className="text-muted-foreground/80">{getCollectionDuration(tracks)}</span>
             </div>
+            {selectedAlbum.members && selectedAlbum.members.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium text-white/70">Integrantes:</span>
+                {selectedAlbum.members.map((m, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    <span className="text-white/90">{m.name}</span>
+                    {m.roll && m.roll.length > 0 && (
+                      <span className="text-muted-foreground/70 text-xs">({m.roll.join(', ')})</span>
+                    )}
+                    {i < selectedAlbum.members.length - 1 && <span className="text-muted-foreground/50">·</span>}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -426,6 +451,9 @@ export default function MusicaPage() {
                   </button>
                 </Link>
                 <h3 className="album-card-title mt-3">{album.title}</h3>
+                {album.project_title && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
+                )}
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
                   <span className="text-xs text-muted-foreground">•</span>
@@ -466,6 +494,9 @@ export default function MusicaPage() {
                   </button>
                 </Link>
                 <h3 className="album-card-title mt-3">{album.title}</h3>
+                {album.project_title && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{album.project_title}</p>
+                )}
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-xs font-bold text-primary uppercase">{album.type}</span>
                   <span className="text-xs text-muted-foreground">•</span>

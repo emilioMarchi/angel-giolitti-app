@@ -24,6 +24,8 @@ interface AlbumDB {
   release_year: number;
   cover_url: string | null;
   description: string | null;
+  members: Array<{ name: string; roll: string[] }>;
+  project: { title: string; members: Array<{ name: string; roll: string[] }> } | null;
   tracks?: any[];
 }
 
@@ -35,6 +37,8 @@ interface AlbumView {
   release_year: number;
   cover_url: string | null;
   description: string | null;
+  project_title: string | null;
+  members: Array<{ name: string; roll: string[] }>;
   tracks: Track[];
 }
 
@@ -65,7 +69,7 @@ export default function AlbumDetailPage() {
         setLoading(true);
         const { data, error } = await supabase
           .from('albums')
-          .select('*, tracks(*)')
+          .select('*, tracks(*), project:projects(title, members)')
           .eq('slug', slug)
           .single();
 
@@ -84,6 +88,11 @@ export default function AlbumDetailPage() {
               cover_url: getR2Url(dbAlbum.cover_url) || undefined,
             }));
 
+          // Heredar miembros del proyecto si el álbum no tiene los suyos
+          const albumMembers = (dbAlbum.members as Array<{ name: string; roll: string[] }>) || [];
+          const projectMembers = (dbAlbum.project?.members as Array<{ name: string; roll: string[] }>) || [];
+          const members = albumMembers.length > 0 ? albumMembers : projectMembers;
+
           setAlbum({
             id: dbAlbum.id,
             title: dbAlbum.title,
@@ -92,6 +101,8 @@ export default function AlbumDetailPage() {
             release_year: dbAlbum.release_year,
             cover_url: getR2Url(dbAlbum.cover_url),
             description: dbAlbum.description,
+            project_title: dbAlbum.project?.title || null,
+            members,
             tracks,
           });
         } else {
@@ -179,15 +190,30 @@ export default function AlbumDetailPage() {
         <div className="flex-1">
           <span className="text-xs uppercase font-bold tracking-widest text-primary">{album.type}</span>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black mt-2 mb-4 leading-tight">{album.title}</h1>
+          {album.project_title && (
+            <p className="text-sm text-primary/90 font-medium mb-2">{album.project_title}</p>
+          )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-bold text-white">Ángel Giolitti</span>
-            <span>•</span>
             <span>{album.release_year}</span>
             <span>•</span>
             <span>{tracks.length} {tracks.length === 1 ? 'canción' : 'canciones'}</span>
             <span>•</span>
             <span className="text-muted-foreground/80">{getCollectionDuration(tracks)}</span>
           </div>
+          {album.members && album.members.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-white/80">Integrantes:</span>
+              {album.members.map((m, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span className="font-medium text-white">{m.name}</span>
+                  {m.roll && m.roll.length > 0 && (
+                    <span className="text-muted-foreground/60">— {m.roll.join(', ')}</span>
+                  )}
+                  {i < album.members.length - 1 && <span className="text-muted-foreground/40">·</span>}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
