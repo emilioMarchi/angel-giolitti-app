@@ -88,6 +88,7 @@ export default function GlobalAudioPlayer() {
             };
           }
           store.playTrack(track, [track]);
+          store.setPlaying(false);
         });
     }
   }, []);
