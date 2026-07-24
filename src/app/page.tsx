@@ -65,31 +65,53 @@ export default function HomePage() {
   const [upcomingEvents, setUpcomingEvents] = useState<EventDB[]>([]);
   const [artistBio, setArtistBio] = useState<string>('Músico · Compositor · Artista');
   const [loading, setLoading] = useState(true);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroImages = [
+    getR2Url('images/gallery/handangel/photo-2.webp'),
+    getR2Url('images/gallery/handangel/photo-3.webp'),
+    getR2Url('images/gallery/handangel/photo-6.webp'),
+  ];
 
   useEffect(() => {
     async function fetchHomeData() {
       try {
         setLoading(true);
 
-        // 1. Tracks populares (top 5 por play_count, con datos del álbum)
-        const { data: tracksData } = await supabase
-          .from('tracks')
-          .select('id, album_id, title, audio_url, duration_seconds, track_order, play_count, albums(title, cover_url)')
-          .order('play_count', { ascending: false })
-          .limit(5);
+        // 1. Últimos tracks por fecha de álbum/single (release_year DESC, track_order ASC)
+        const { data: recentAlbums } = await supabase
+          .from('albums')
+          .select('id, release_year')
+          .order('release_year', { ascending: false })
+          .limit(3);
 
-        if (tracksData && tracksData.length > 0) {
-          const mapped: Track[] = (tracksData as unknown as TrackDB[]).map((t) => ({
-            id: t.id,
-            album_id: t.album_id,
-            title: t.title,
-            audio_url: t.audio_url,
-            duration_seconds: t.duration_seconds,
-            track_order: t.track_order,
-            album_title: t.albums?.title || '',
-            cover_url: t.albums?.cover_url || undefined,
-          }));
-          setPopularTracks(mapped);
+        if (recentAlbums && recentAlbums.length > 0) {
+          const albumIds = recentAlbums.map((a) => a.id);
+          const { data: tracksData } = await supabase
+            .from('tracks')
+            .select('id, album_id, title, audio_url, duration_seconds, track_order, play_count, albums(title, cover_url)')
+            .in('album_id', albumIds)
+            .order('track_order', { ascending: true });
+
+          if (tracksData && tracksData.length > 0) {
+            const albumYearMap = new Map(recentAlbums.map((a) => [a.id, a.release_year]));
+            const sorted = [...tracksData].sort((a: any, b: any) => {
+              const yearA = albumYearMap.get(a.album_id) || 0;
+              const yearB = albumYearMap.get(b.album_id) || 0;
+              if (yearB !== yearA) return yearB - yearA;
+              return (a.track_order || 1) - (b.track_order || 1);
+            });
+            const mapped: Track[] = (sorted as unknown as TrackDB[]).map((t) => ({
+              id: t.id,
+              album_id: t.album_id,
+              title: t.title,
+              audio_url: t.audio_url,
+              duration_seconds: t.duration_seconds,
+              track_order: t.track_order,
+              album_title: t.albums?.title || '',
+              cover_url: t.albums?.cover_url || undefined,
+            }));
+            setPopularTracks(mapped);
+          }
         }
 
         // 2. Últimos 5 álbumes
@@ -135,6 +157,13 @@ export default function HomePage() {
     fetchHomeData();
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroImages.length]);
+
   const handlePlayAll = () => {
     if (popularTracks.length > 0) {
       playQueue(popularTracks, 0);
@@ -149,14 +178,31 @@ export default function HomePage() {
     <div className="artist-profile">
       {/* ═══ HERO / CABECERA DEL ARTISTA (tipo Spotify) ═══ */}
       <header className="artist-hero">
-        {/* Banner / Cover */}
+        {/* Banner / Cover - Carrusel rotativo */}
         <div className="artist-hero-bg">
-          <img
-            src={getR2Url('images/gallery/handangel/photo-3.webp')}
-            alt="Banner"
-            className="w-full h-full object-cover"
-          />
+          {heroImages.map((src, i) => (
+            <img
+              key={src}
+              src={src}
+              alt="Banner"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                i === heroIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ))}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {heroImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setHeroIndex(i)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  i === heroIndex ? 'bg-white w-6' : 'bg-white/40'
+                }`}
+                aria-label={`Imagen ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="artist-hero-content">
