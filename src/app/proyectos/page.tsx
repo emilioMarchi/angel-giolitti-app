@@ -104,6 +104,11 @@ export default function ProyectosPage() {
             cover_image_url: getR2Url(p.cover_image_url),
             profile_image_url: getR2Url(p.profile_image_url)
           }));
+          sanitized.sort((a: any, b: any) => {
+            const yearA = a.end_year || a.creation_year;
+            const yearB = b.end_year || b.creation_year;
+            return yearB - yearA;
+          });
           setProjects(sanitized);
         }
       } catch (err) {
@@ -209,7 +214,14 @@ export default function ProyectosPage() {
                 </div>
               )}
               <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground/80 mt-auto pt-4 border-t border-white/5">
-                <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {project.creation_year}</span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {project.end_year ? (
+                    <>{project.creation_year} — {project.slug === 'handangel' ? 'Actualidad' : project.end_year}</>
+                  ) : (
+                    project.creation_year
+                  )}
+                </span>
                 <span className="flex items-center gap-1 hover:text-white transition-colors">
                   Ver detalle <ExternalLink className="h-3 w-3" />
                 </span>
