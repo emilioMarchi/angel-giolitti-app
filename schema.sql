@@ -144,6 +144,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 8. EXTENSIÓN Y FUNCIÓN DE BÚSQUEDA GLOBAL
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE OR REPLACE FUNCTION global_search(query_text TEXT)
+RETURNS JSON AS $body$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_build_object(
+    'tracks', (
+      SELECT COALESCE(json_agg(t), '[]'::json)
+      FROM (
+        SELECT tr.id, tr.album_id, tr.title, tr.audio_url, tr.duration_seconds, tr.track_order, 
+               al.title as album_title, al.cover_url,
+               pr.title as project_title, pr.slug as project_slug
+        FROM tracks tr
+        LEFT JOIN albums al ON tr.album_id = al.id
+        LEFT JOIN projects pr ON al.project_id = pr.id
+        WHERE unaccent(tr.title) ILIKE unaccent('%' || query_text || '%')
+        LIMIT 5
+      ) t
+    ),
+    'albums', (
+      SELECT COALESCE(json_agg(a), '[]'::json)
+      FROM (
+        SELECT al.id, al.title, al.type, al.release_year, al.cover_url, al.slug,
+               pr.title as project_title, pr.slug as project_slug
+        FROM albums al
+        LEFT JOIN projects pr ON al.project_id = pr.id
+        WHERE unaccent(al.title) ILIKE unaccent('%' || query_text || '%')
+        LIMIT 5
+      ) a
+    ),
+    'projects', (
+      SELECT COALESCE(json_agg(p), '[]'::json)
+      FROM (
+        SELECT id, title, category, creation_year, main_video_url, slug
+        FROM projects
+        WHERE unaccent(title) ILIKE unaccent('%' || query_text || '%')
+        LIMIT 5
+      ) p
+    )
+  ) INTO result;
+
+  RETURN result;
+END;
+$body$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- POLÍTICAS ROW LEVEL SECURITY (RLS)
 ALTER TABLE artist_profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE artist_documents ENABLE ROW LEVEL SECURITY;
@@ -173,3 +221,5 @@ CREATE POLICY "Admin total media_albums" ON media_albums FOR ALL TO authenticate
 CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Insert público vistas" ON page_views FOR INSERT WITH CHECK (true);
+
+

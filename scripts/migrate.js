@@ -5,6 +5,9 @@ const { createClient } = require('@supabase/supabase-js');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 
+// Cargar variables de entorno locales de .env.local
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
+
 // --- AUTODETECCIÓN DE FFMPEG / FFPROBE POR NPM ---
 try {
   const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');

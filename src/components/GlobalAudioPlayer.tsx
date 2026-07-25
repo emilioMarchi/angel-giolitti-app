@@ -53,7 +53,7 @@ export default function GlobalAudioPlayer() {
   // Tema por defecto al cargar el sitio
   useEffect(() => {
     if (!currentTrack) {
-      const defaultAudioUrl = 'tracks/handangel/handangel/patio-colibri.mp3';
+      const defaultAudioUrl = getR2Url('tracks/handangel/handangel/patio-colibri.mp3');
 
       supabase
         .from('tracks')
