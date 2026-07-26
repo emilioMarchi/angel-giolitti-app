@@ -59,18 +59,33 @@ function formatEventDate(isoString: string): { day: string; month: string } {
 }
 
 export default function HomePage() {
-  const { playTrack, playQueue, currentTrack, isPlaying, togglePlay } = usePlayerStore();
+  const { playTrack, playQueue, currentTrack, isPlaying, togglePlay, setPopularTracks: setStorePopularTracks } = usePlayerStore();
   const [popularTracks, setPopularTracks] = useState<Track[]>([]);
   const [discography, setDiscography] = useState<AlbumDB[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<EventDB[]>([]);
   const [artistBio, setArtistBio] = useState<string>('Músico · Compositor · Artista');
   const [loading, setLoading] = useState(true);
   const [heroIndex, setHeroIndex] = useState(0);
-  const heroImages = [
+  const [isMobile, setIsMobile] = useState(false);
+
+  const allImages = [
+    getR2Url('images/gallery/handangel/photo-0.webp'),
     getR2Url('images/gallery/handangel/photo-2.webp'),
     getR2Url('images/gallery/handangel/photo-3.webp'),
     getR2Url('images/gallery/handangel/photo-6.webp'),
   ];
+  const heroImages = isMobile ? allImages : allImages.slice(1);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    setHeroIndex((prev) => (prev >= heroImages.length ? 0 : prev));
+  }, [heroImages.length]);
 
   useEffect(() => {
     async function fetchHomeData() {
@@ -111,6 +126,7 @@ export default function HomePage() {
               cover_url: t.albums?.cover_url || undefined,
             }));
             setPopularTracks(mapped);
+            setStorePopularTracks(mapped);
           }
         }
 
@@ -158,11 +174,12 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
     const timer = setInterval(() => {
       setHeroIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [heroImages.length]);
+  }, [heroImages.length, isMobile]);
 
   const handlePlayAll = () => {
     if (popularTracks.length > 0) {
@@ -176,77 +193,77 @@ export default function HomePage() {
 
   return (
     <div className="artist-profile">
-      {/* ═══ HERO / CABECERA DEL ARTISTA (tipo Spotify) ═══ */}
-      <header className="artist-hero">
-        {/* Banner / Cover - Carrusel rotativo */}
-        <div className="artist-hero-bg">
-          {heroImages.map((src, i) => (
-            <img
-              key={src}
-              src={src}
-              alt="Banner"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-                i === heroIndex ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
-          ))}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {heroImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setHeroIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i === heroIndex ? 'bg-white w-6' : 'bg-white/40'
+      {/* ═══ HERO solo desktop (mobile hero está en layout) ═══ */}
+      {!isMobile && (
+        <header className="artist-hero">
+          <div className="artist-hero-bg">
+            {heroImages.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt="Banner"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                  i === heroIndex ? 'opacity-100' : 'opacity-0'
                 }`}
-                aria-label={`Imagen ${i + 1}`}
               />
             ))}
-          </div>
-        </div>
-
-        <div className="artist-hero-content">
-          {/* Foto de perfil */}
-          <div className="artist-avatar overflow-hidden">
-            <img
-              src={getR2Url('images/gallery/handangel/photo-0.webp')}
-              alt="Ángel Giolitti"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* Info del artista */}
-          <div className="artist-hero-info">
-            <div className="artist-verified">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span>Artista verificado</span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {heroImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setHeroIndex(i)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    i === heroIndex ? 'bg-white w-6' : 'bg-white/40'
+                  }`}
+                  aria-label={`Imagen ${i + 1}`}
+                />
+              ))}
             </div>
-            <h1 className="artist-name">Ángel Giolitti</h1>
-            <p className="artist-meta">
-              <span className="artist-listeners">
-                <Users className="h-4 w-4" />
-                {artistBio}
-              </span>
-            </p>
           </div>
-        </div>
-      </header>
 
-      {/* ═══ BARRA DE ACCIONES ═══ */}
-      <div className="artist-actions">
-        <button onClick={handlePlayAll} className="artist-play-btn" aria-label="Reproducir todo">
-          <Play className="h-6 w-6" fill="currentColor" />
-        </button>
-        <button className="artist-shuffle-btn" aria-label="Aleatorio">
-          <Shuffle className="h-5 w-5" />
-        </button>
-        <button className="artist-follow-btn">
-          Seguir
-        </button>
-        <button className="artist-more-btn" aria-label="Más opciones">
-          <MoreHorizontal className="h-5 w-5" />
-        </button>
-      </div>
+          <div className="artist-hero-content">
+            <div className="artist-avatar overflow-hidden">
+              <img
+                src={getR2Url('images/gallery/handangel/photo-0.webp')}
+                alt="Ángel Giolitti"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="artist-hero-info">
+              <div className="artist-verified">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span>Artista verificado</span>
+              </div>
+              <h1 className="artist-name">Ángel Giolitti</h1>
+              <p className="artist-meta">
+                <span className="artist-listeners">
+                  <Users className="h-4 w-4" />
+                  {artistBio}
+                </span>
+              </p>
+            </div>
+          </div>
+        </header>
+      )}
+
+      {/* ═══ BARRA DE ACCIONES (solo desktop) ═══ */}
+      {!isMobile && (
+        <div className="artist-actions">
+          <button onClick={handlePlayAll} className="artist-play-btn" aria-label="Reproducir todo">
+            <Play className="h-6 w-6" fill="currentColor" />
+          </button>
+          <button className="artist-shuffle-btn" aria-label="Aleatorio">
+            <Shuffle className="h-5 w-5" />
+          </button>
+          <button className="artist-follow-btn">
+            Seguir
+          </button>
+          <button className="artist-more-btn" aria-label="Más opciones">
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* ═══ POPULARES (lista de tracks tipo Spotify) ═══ */}
       <section className="artist-section">

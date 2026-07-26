@@ -21,6 +21,7 @@ interface PlayerState {
   isMuted: boolean;
   progress: number; // segundos
   duration: number; // segundos
+  popularTracks: Track[];
   
   // Acciones
   playTrack: (track: Track, newQueue?: Track[]) => void;
@@ -36,6 +37,7 @@ interface PlayerState {
   clearQueue: () => void;
   addToQueue: (track: Track) => void;
   setTrack: (track: Track, newQueue?: Track[]) => void;
+  setPopularTracks: (tracks: Track[]) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -49,6 +51,7 @@ export const usePlayerStore = create<PlayerState>()(
       isMuted: false,
       progress: 0,
       duration: 0,
+      popularTracks: [],
 
       playTrack: (track, newQueue) => {
         let activeQueue = get().queue;
@@ -133,6 +136,8 @@ export const usePlayerStore = create<PlayerState>()(
         isPlaying: false,
         progress: 0,
       }),
+
+      setPopularTracks: (tracks) => set({ popularTracks: tracks }),
 
       addToQueue: (track) => {
         const { queue } = get();

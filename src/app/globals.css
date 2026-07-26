@@ -1471,7 +1471,7 @@
 
   /* Artist profile responsive */
   .artist-hero {
-    min-height: 220px;
+    min-height: 380px;
     padding: 0 16px 16px;
   }
 
@@ -1511,6 +1511,11 @@
 
   .track-row-actions {
     display: none;
+  }
+
+  .home-footer {
+    padding: 24px 16px 16px;
+    font-size: 0.75rem;
   }
 
   .track-row-cover {
@@ -1559,4 +1564,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
