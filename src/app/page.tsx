@@ -290,14 +290,15 @@ export default function HomePage() {
                     <Play className="track-play-icon" fill="currentColor" />
                   </div>
 
+                  <div className="track-row-cover">
+                    {track.cover_url ? (
+                      <img src={getR2Url(track.cover_url)} alt={track.album_title} className="w-full h-full object-cover rounded" />
+                    ) : (
+                      <Disc3 className="h-5 w-5 text-muted-foreground/40" />
+                    )}
+                  </div>
+
                   <div className="track-row-info">
-                    <div className="track-row-cover">
-                      {track.cover_url ? (
-                        <img src={getR2Url(track.cover_url)} alt={track.album_title} className="w-full h-full object-cover rounded" />
-                      ) : (
-                        <Disc3 className="h-5 w-5 text-muted-foreground/40" />
-                      )}
-                    </div>
                     <div className="track-row-text">
                       <span className={`track-row-title ${isCurrent ? 'text-primary' : ''}`}>
                         {track.title}

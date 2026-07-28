@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Users, Play, Home, Search, Music2, FolderOpen, CalendarDays, Images, User } from 'lucide-react';
+import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User } from 'lucide-react';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { usePlayerStore } from '@/store/usePlayerStore';
+import { incrementFollow, decrementFollow } from '@/lib/metrics';
 
 const heroImages = [
   getR2Url('images/gallery/handangel/photo-0.webp'),
@@ -19,9 +20,12 @@ export default function MobileHero() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [artistBio, setArtistBio] = useState('Músico · Compositor · Artista');
+  const [followersCount, setFollowersCount] = useState(0);
   const pathname = usePathname();
   const playQueue = usePlayerStore((state) => state.playQueue);
   const popularTracks = usePlayerStore((state) => state.popularTracks);
+  const isFollowing = usePlayerStore((state) => state.isFollowing);
+  const toggleFollow = usePlayerStore((state) => state.toggleFollow);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -41,10 +45,13 @@ export default function MobileHero() {
   useEffect(() => {
     supabase
       .from('artist_profile')
-      .select('short_bio')
+      .select('short_bio, followers_count')
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setArtistBio((data as { short_bio: string }).short_bio || 'Músico · Compositor · Artista');
+        if (data) {
+          setArtistBio((data as { short_bio: string }).short_bio || 'Músico · Compositor · Artista');
+          setFollowersCount((data as { followers_count: number }).followers_count || 0);
+        }
       });
   }, []);
 
@@ -57,12 +64,6 @@ export default function MobileHero() {
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
-  };
-
-  const handlePlayAll = () => {
-    if (popularTracks.length > 0) {
-      playQueue(popularTracks, 0);
-    }
   };
 
   return (
@@ -96,10 +97,22 @@ export default function MobileHero() {
 
         <div className="artist-hero-content">
           <div className="w-full flex flex-col items-start gap-1 pb-2 text-left">
-            <h1 className="text-white font-black tracking-tight inline-flex items-center gap-2" style={{ fontFamily: 'var(--font-heading), var(--font-sans), sans-serif', fontSize: '2rem', lineHeight: 1.1 }}>
-              Ángel Giolitti
-              <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-            </h1>
+            <div className="flex items-center gap-2 w-full">
+              <h1 className="text-white font-black tracking-tight inline-flex items-center gap-2 flex-1" style={{ fontFamily: 'var(--font-heading), var(--font-sans), sans-serif', fontSize: '2rem', lineHeight: 1.1 }}>
+                Ángel Giolitti
+                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+              </h1>
+              <button
+                onClick={toggleFollow}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all flex-shrink-0 ${
+                  isFollowing
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-white/15 text-white hover:bg-white/25'
+                }`}
+              >
+                {isFollowing ? 'Siguiendo' : 'Seguir'}
+              </button>
+            </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Users className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
               <span>{artistBio}</span>
@@ -108,14 +121,7 @@ export default function MobileHero() {
         </div>
       </header>
 
-      <div className="sticky top-0 z-40 flex items-center gap-2 px-3 py-2.5 bg-[var(--sidebar)]/95 backdrop-blur-md">
-        <button
-          onClick={handlePlayAll}
-          className="flex items-center justify-center w-11 h-11 rounded-full bg-primary text-primary-foreground flex-shrink-0 shadow-lg hover:scale-105 active:scale-95 transition-transform"
-          aria-label="Reproducir todo"
-        >
-          <Play className="h-5 w-5" fill="currentColor" />
-        </button>
+      <div className="sticky top-0 z-40 flex items-center px-3 py-2.5 bg-[var(--sidebar)]/95 backdrop-blur-md">
         <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           {[
             { href: '/', icon: Home, label: 'Inicio' },

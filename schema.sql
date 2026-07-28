@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS artist_profile (
   short_bio TEXT,
   full_bio_markdown TEXT,
   social_links JSONB DEFAULT '{}'::jsonb,
+  followers_count INTEGER DEFAULT 0,
+  listeners_count INTEGER DEFAULT 0,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -108,15 +110,10 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. MÓDULO MÉTRICAS Y ESTADÍSTICAS
-CREATE TABLE IF NOT EXISTS page_views (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  path TEXT NOT NULL,
-  visited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- ÍNDICES
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_play_count ON tracks(play_count DESC);
+CREATE INDEX IF NOT EXISTS idx_tracks_likes_count ON tracks(likes_count DESC);
 CREATE INDEX IF NOT EXISTS idx_media_items_album ON media_items(media_album_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_albums_slug ON albums(slug);
@@ -136,13 +133,66 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION increment_track_like(target_track_id UUID)
-RETURNS VOID AS $
+RETURNS VOID AS $$
 BEGIN
   UPDATE tracks
   SET likes_count = likes_count + 1
   WHERE id = target_track_id;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_track_like(target_track_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE tracks
+  SET likes_count = GREATEST(0, likes_count - 1)
+  WHERE id = target_track_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile
+  SET followers_count = followers_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile
+  SET followers_count = GREATEST(0, followers_count - 1)
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_artist_listener()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile
+  SET listeners_count = listeners_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_artist_metrics()
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_build_object(
+    'total_plays', COALESCE((SELECT SUM(play_count) FROM tracks), 0),
+    'total_likes', COALESCE((SELECT SUM(likes_count) FROM tracks), 0),
+    'total_tracks', (SELECT COUNT(id) FROM tracks),
+    'total_followers', COALESCE((SELECT followers_count FROM artist_profile LIMIT 1), 0),
+    'total_listeners', COALESCE((SELECT listeners_count FROM artist_profile LIMIT 1), 0)
+  ) INTO result;
+
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. EXTENSIÓN Y FUNCIÓN DE BÚSQUEDA GLOBAL
 CREATE EXTENSION IF NOT EXISTS unaccent;
@@ -156,7 +206,7 @@ BEGIN
     'tracks', (
       SELECT COALESCE(json_agg(t), '[]'::json)
       FROM (
-        SELECT tr.id, tr.album_id, tr.title, tr.audio_url, tr.duration_seconds, tr.track_order, 
+        SELECT tr.id, tr.album_id, tr.title, tr.audio_url, tr.duration_seconds, tr.track_order, tr.play_count, tr.likes_count,
                al.title as album_title, al.cover_url,
                pr.title as project_title, pr.slug as project_slug
         FROM tracks tr
@@ -201,25 +251,39 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_albums ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE page_views ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Lectura pública artist_profile" ON artist_profile;
 CREATE POLICY "Lectura pública artist_profile" ON artist_profile FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública artist_documents" ON artist_documents;
 CREATE POLICY "Lectura pública artist_documents" ON artist_documents FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública albums" ON albums;
 CREATE POLICY "Lectura pública albums" ON albums FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública tracks" ON tracks;
 CREATE POLICY "Lectura pública tracks" ON tracks FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública projects" ON projects;
 CREATE POLICY "Lectura pública projects" ON projects FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública media_albums" ON media_albums;
 CREATE POLICY "Lectura pública media_albums" ON media_albums FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública media_items" ON media_items;
 CREATE POLICY "Lectura pública media_items" ON media_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública events" ON events;
 CREATE POLICY "Lectura pública events" ON events FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admin total artist_profile" ON artist_profile;
 CREATE POLICY "Admin total artist_profile" ON artist_profile FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total artist_documents" ON artist_documents;
 CREATE POLICY "Admin total artist_documents" ON artist_documents FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total albums" ON albums;
 CREATE POLICY "Admin total albums" ON albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total tracks" ON tracks;
 CREATE POLICY "Admin total tracks" ON tracks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total projects" ON projects;
 CREATE POLICY "Admin total projects" ON projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total media_albums" ON media_albums;
 CREATE POLICY "Admin total media_albums" ON media_albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total media_items" ON media_items;
 CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total events" ON events;
 CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Insert público vistas" ON page_views FOR INSERT WITH CHECK (true);
 
 

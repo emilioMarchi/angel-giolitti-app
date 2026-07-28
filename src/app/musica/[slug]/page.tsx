@@ -231,8 +231,9 @@ export default function AlbumDetailPage() {
       </div>
 
       <div className="track-list-table">
-        <div className="grid grid-cols-[50px_1fr_80px] border-b border-white/10 pb-2 mb-4 text-xs font-bold tracking-widest text-muted-foreground px-4 uppercase">
+        <div className="grid grid-cols-[50px_40px_1fr_80px] border-b border-white/10 pb-2 mb-4 text-xs font-bold tracking-widest text-muted-foreground px-4 uppercase">
           <div>#</div>
+          <div />
           <div>Título</div>
           <div className="text-right"><Clock className="h-4 w-4 inline-block" /></div>
         </div>
@@ -245,7 +246,7 @@ export default function AlbumDetailPage() {
                 <div
                   key={track.id}
                   onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
-                  className={`track-row grid grid-cols-[50px_1fr_80px] items-center px-4 py-3 rounded-md hover:bg-white/10 transition-colors cursor-pointer ${isCurrent ? 'bg-white/5' : ''}`}
+                  className={`track-row grid grid-cols-[50px_40px_1fr_80px] items-center px-4 py-3 rounded-md hover:bg-white/10 transition-colors cursor-pointer ${isCurrent ? 'bg-white/5' : ''}`}
                 >
                   <div className="flex items-center">
                     {isCurrent && isPlaying ? (
@@ -258,11 +259,19 @@ export default function AlbumDetailPage() {
                     <Play className="track-play-icon h-4 w-4 text-white" fill="currentColor" />
                   </div>
 
+                  <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                    {track.cover_url ? (
+                      <img src={track.cover_url} alt={track.album_title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Disc3 className="h-5 w-5 text-muted-foreground/40" />
+                    )}
+                  </div>
+
                   <div className="min-w-0">
-                    <p className={`font-semibold truncate ${isCurrent ? 'text-primary' : 'text-white'}`}>
+                    <p className={`font-semibold ${isCurrent ? 'text-primary' : 'text-white'}`}>
                       {track.title}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">Ángel Giolitti</p>
+                    <p className="text-xs text-muted-foreground">Ángel Giolitti</p>
                   </div>
 
                   <div className="text-right text-sm text-muted-foreground">

@@ -1,5 +1,5 @@
 
-
+Error: Failed to run sql query: ERROR: 42P01: relation "page_views" does not exist
 
 Asunto: Especificaciones consolidadas de Métricas, Rankeo y Script DDL actualizado para Supabase
 
@@ -31,10 +31,14 @@ Soporte para Desmarcar "Me Gusta" (Decremento): Se agrega la función RPC decrem
 
 Función de Vista Consolidada del Artista (get_artist_metrics): Función RPC para consultar los totales acumulados del perfil de Ángel Giolitti en una sola llamada.
 
+Seguidores del Artista (followers_count): Campo en artist_profile para contar seguidores únicos. Botón "Seguir" persistido en localStorage.
+
+Oyentes Únicos (listeners_count): Campo en artist_profile para contar visitantes únicos del portfolio. Se registra una vez por navegador via localStorage al cargar cualquier página.
+
 3. Script DDL Final para Supabase
 Copiá y ejecutá el siguiente script en el SQL Editor de Supabase:
 
-SQL
+```sql
 -- ==========================================
 -- SCRIPT DDL COMPLETO Y OPTIMIZADO PARA SUPABASE
 -- Plataforma Web Autoadministrable angelgiolitti.com.ar
@@ -50,6 +54,8 @@ CREATE TABLE IF NOT EXISTS artist_profile (
   short_bio TEXT,
   full_bio_markdown TEXT,
   social_links JSONB DEFAULT '{}'::jsonb,
+  followers_count INTEGER DEFAULT 0,
+  listeners_count INTEGER DEFAULT 0,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -58,9 +64,9 @@ CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
-  category TEXT, -- 'banda', 'documental', etc.
+  category TEXT,
   creation_year INTEGER NOT NULL,
-  end_year INTEGER, -- Opcional para bandas disueltas
+  end_year INTEGER,
   profile_image_url TEXT,
   cover_image_url TEXT,
   summary TEXT,
@@ -76,12 +82,12 @@ CREATE TABLE IF NOT EXISTS artist_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
-  document_type TEXT, -- 'partitura', 'dossier', 'cv'
+  document_type TEXT,
   file_url TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. MÓDULO MUSICAL (ÁLBUMES, EPS, SINGLES Y TRACKS)
+-- 4. MÓDULO MUSICAL
 CREATE TABLE IF NOT EXISTS albums (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
@@ -158,61 +164,69 @@ CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
 CREATE INDEX IF NOT EXISTS idx_albums_project ON albums(project_id);
 CREATE INDEX IF NOT EXISTS idx_artist_documents_project ON artist_documents(project_id);
 
--- ==========================================
--- FUNCIONES RPC ATÓMICAS PARA MÉTRICAS DE AUDIO
--- ==========================================
-
--- Incrementar reproducciones de un track
+-- FUNCIONES RPC
 CREATE OR REPLACE FUNCTION increment_track_play(target_track_id UUID)
 RETURNS VOID AS $$
 BEGIN
-  UPDATE tracks
-  SET play_count = play_count + 1
-  WHERE id = target_track_id;
+  UPDATE tracks SET play_count = play_count + 1 WHERE id = target_track_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Incrementar Me Gusta
 CREATE OR REPLACE FUNCTION increment_track_like(target_track_id UUID)
 RETURNS VOID AS $$
 BEGIN
-  UPDATE tracks
-  SET likes_count = likes_count + 1
-  WHERE id = target_track_id;
+  UPDATE tracks SET likes_count = likes_count + 1 WHERE id = target_track_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Decrementar Me Gusta (Si el usuario quita el Like)
 CREATE OR REPLACE FUNCTION decrement_track_like(target_track_id UUID)
 RETURNS VOID AS $$
 BEGIN
-  UPDATE tracks
-  SET likes_count = GREATEST(0, likes_count - 1)
-  WHERE id = target_track_id;
+  UPDATE tracks SET likes_count = GREATEST(0, likes_count - 1) WHERE id = target_track_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Obtener totales acumulados del Artista para el Dashboard / Perfil
+CREATE OR REPLACE FUNCTION increment_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET followers_count = followers_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET followers_count = GREATEST(0, followers_count - 1)
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_artist_listener()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET listeners_count = listeners_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE OR REPLACE FUNCTION get_artist_metrics()
 RETURNS JSON AS $$
 DECLARE
   result JSON;
 BEGIN
   SELECT json_build_object(
-    'total_plays', COALESCE(SUM(play_count), 0),
-    'total_likes', COALESCE(SUM(likes_count), 0),
-    'total_tracks', COUNT(id)
-  ) INTO result
-  FROM tracks;
-
+    'total_plays', COALESCE((SELECT SUM(play_count) FROM tracks), 0),
+    'total_likes', COALESCE((SELECT SUM(likes_count) FROM tracks), 0),
+    'total_tracks', (SELECT COUNT(id) FROM tracks),
+    'total_followers', COALESCE((SELECT followers_count FROM artist_profile LIMIT 1), 0),
+    'total_listeners', COALESCE((SELECT listeners_count FROM artist_profile LIMIT 1), 0)
+  ) INTO result;
   RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ==========================================
 -- BÚSQUEDA GLOBAL
--- ==========================================
-
 CREATE OR REPLACE FUNCTION global_search(query_text TEXT)
 RETURNS JSON AS $body$
 DECLARE
@@ -253,15 +267,11 @@ BEGIN
       ) p
     )
   ) INTO result;
-
   RETURN result;
 END;
 $body$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ==========================================
--- ROW LEVEL SECURITY (RLS)
--- ==========================================
-
+-- ROW LEVEL SECURITY
 ALTER TABLE artist_profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE artist_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE albums ENABLE ROW LEVEL SECURITY;
@@ -271,20 +281,111 @@ ALTER TABLE media_albums ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Lectura pública artist_profile" ON artist_profile;
 CREATE POLICY "Lectura pública artist_profile" ON artist_profile FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública artist_documents" ON artist_documents;
 CREATE POLICY "Lectura pública artist_documents" ON artist_documents FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública albums" ON albums;
 CREATE POLICY "Lectura pública albums" ON albums FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública tracks" ON tracks;
 CREATE POLICY "Lectura pública tracks" ON tracks FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública projects" ON projects;
 CREATE POLICY "Lectura pública projects" ON projects FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública media_albums" ON media_albums;
 CREATE POLICY "Lectura pública media_albums" ON media_albums FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública media_items" ON media_items;
 CREATE POLICY "Lectura pública media_items" ON media_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública events" ON events;
 CREATE POLICY "Lectura pública events" ON events FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admin total artist_profile" ON artist_profile;
 CREATE POLICY "Admin total artist_profile" ON artist_profile FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total artist_documents" ON artist_documents;
 CREATE POLICY "Admin total artist_documents" ON artist_documents FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total albums" ON albums;
 CREATE POLICY "Admin total albums" ON albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total tracks" ON tracks;
 CREATE POLICY "Admin total tracks" ON tracks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total projects" ON projects;
 CREATE POLICY "Admin total projects" ON projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total media_albums" ON media_albums;
 CREATE POLICY "Admin total media_albums" ON media_albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total media_items" ON media_items;
 CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total events" ON events;
 CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
+```
+
+
+==========================================
+SCRIPT DE LIMPIEZA EN SUPABASE
+==========================================
+
+Copiá y ejecutá el siguiente script en el SQL Editor de Supabase para agregar los campos y funciones nuevas sin perder datos existentes:
+
+```sql
+-- 1. Eliminar tabla page_views (si existe)
+DO $$ BEGIN
+  DROP TABLE IF EXISTS page_views;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- 2. Agregar campos nuevos a artist_profile (si no existen)
+ALTER TABLE artist_profile ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0;
+ALTER TABLE artist_profile ADD COLUMN IF NOT EXISTS listeners_count INTEGER DEFAULT 0;
+
+-- 3. Agregar índices para métricas
+CREATE INDEX IF NOT EXISTS idx_tracks_play_count ON tracks(play_count DESC);
+CREATE INDEX IF NOT EXISTS idx_tracks_likes_count ON tracks(likes_count DESC);
+
+-- 4. Crear función decrement_track_like
+CREATE OR REPLACE FUNCTION decrement_track_like(target_track_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE tracks SET likes_count = GREATEST(0, likes_count - 1) WHERE id = target_track_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. Crear funciones de seguidores
+CREATE OR REPLACE FUNCTION increment_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET followers_count = followers_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_artist_follow()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET followers_count = GREATEST(0, followers_count - 1)
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. Crear función de oyentes únicos
+CREATE OR REPLACE FUNCTION increment_artist_listener()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE artist_profile SET listeners_count = listeners_count + 1
+  WHERE id = (SELECT id FROM artist_profile LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Crear función get_artist_metrics actualizada
+CREATE OR REPLACE FUNCTION get_artist_metrics()
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_build_object(
+    'total_plays', COALESCE((SELECT SUM(play_count) FROM tracks), 0),
+    'total_likes', COALESCE((SELECT SUM(likes_count) FROM tracks), 0),
+    'total_tracks', (SELECT COUNT(id) FROM tracks),
+    'total_followers', COALESCE((SELECT followers_count FROM artist_profile LIMIT 1), 0),
+    'total_listeners', COALESCE((SELECT listeners_count FROM artist_profile LIMIT 1), 0)
+  ) INTO result;
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```

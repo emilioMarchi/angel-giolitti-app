@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { incrementLike, decrementLike, incrementFollow, decrementFollow } from '@/lib/metrics';
 
 export interface Track {
   id: string;
@@ -22,6 +23,8 @@ interface PlayerState {
   progress: number; // segundos
   duration: number; // segundos
   popularTracks: Track[];
+  likedTrackIds: string[];
+  isFollowing: boolean;
   
   // Acciones
   playTrack: (track: Track, newQueue?: Track[]) => void;
@@ -38,6 +41,8 @@ interface PlayerState {
   addToQueue: (track: Track) => void;
   setTrack: (track: Track, newQueue?: Track[]) => void;
   setPopularTracks: (tracks: Track[]) => void;
+  toggleLike: (trackId: string) => void;
+  toggleFollow: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -52,6 +57,8 @@ export const usePlayerStore = create<PlayerState>()(
       progress: 0,
       duration: 0,
       popularTracks: [],
+      likedTrackIds: [],
+      isFollowing: false,
 
       playTrack: (track, newQueue) => {
         let activeQueue = get().queue;
@@ -145,12 +152,37 @@ export const usePlayerStore = create<PlayerState>()(
           set({ queue: [...queue, track] });
         }
       },
+
+      toggleLike: (trackId) => {
+        const { likedTrackIds } = get();
+        const isLiked = likedTrackIds.includes(trackId);
+        if (isLiked) {
+          set({ likedTrackIds: likedTrackIds.filter((id) => id !== trackId) });
+          decrementLike(trackId);
+        } else {
+          set({ likedTrackIds: [...likedTrackIds, trackId] });
+          incrementLike(trackId);
+        }
+      },
+
+      toggleFollow: () => {
+        const { isFollowing } = get();
+        if (isFollowing) {
+          set({ isFollowing: false });
+          decrementFollow();
+        } else {
+          set({ isFollowing: true });
+          incrementFollow();
+        }
+      },
     }),
     {
       name: 'angel-giolitti-player-storage',
       partialize: (state) => ({
         volume: state.volume,
         isMuted: state.isMuted,
+        likedTrackIds: state.likedTrackIds,
+        isFollowing: state.isFollowing,
       }),
     }
   )

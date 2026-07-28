@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { incrementPlay } from '@/lib/metrics';
 import {
   Play,
   Pause,
@@ -41,6 +42,7 @@ export default function GlobalAudioPlayer() {
     duration,
     queue,
     currentIndex,
+    likedTrackIds,
     togglePlay,
     nextTrack,
     previousTrack,
@@ -48,6 +50,7 @@ export default function GlobalAudioPlayer() {
     toggleMute,
     setProgress,
     setDuration,
+    toggleLike,
   } = usePlayerStore();
 
   // Tema por defecto al cargar el sitio
@@ -154,6 +157,23 @@ export default function GlobalAudioPlayer() {
     audio.muted = isMuted;
   }, [volume, isMuted]);
 
+  // Tracking de plays: registrar +1 tras 10s de reproducción continua
+  const playRecordedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (currentTrack?.id) {
+      playRecordedRef.current = null;
+    }
+  }, [currentTrack?.id]);
+
+  useEffect(() => {
+    if (!currentTrack?.id || playRecordedRef.current === currentTrack.id) return;
+    if (progress >= 10) {
+      playRecordedRef.current = currentTrack.id;
+      incrementPlay(currentTrack.id);
+    }
+  }, [progress, currentTrack?.id]);
+
   const handleTimeUpdate = useCallback(() => {
     const audio = audioRef.current;
     if (audio) setProgress(audio.currentTime);
@@ -240,8 +260,12 @@ export default function GlobalAudioPlayer() {
                   <p className="player-track-artist">{currentTrack.album_title}</p>
                 )}
               </div>
-              <button className="player-like-btn" aria-label="Me gusta">
-                <Heart className="h-4 w-4" />
+              <button
+                onClick={() => currentTrack && toggleLike(currentTrack.id)}
+                className={`player-like-btn ${likedTrackIds.includes(currentTrack.id) ? 'text-teal-400' : ''}`}
+                aria-label="Me gusta"
+              >
+                <Heart className="h-4 w-4" fill={likedTrackIds.includes(currentTrack.id) ? 'currentColor' : 'none'} />
               </button>
             </>
           ) : (
