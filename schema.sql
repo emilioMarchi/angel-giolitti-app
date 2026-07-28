@@ -136,13 +136,13 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION increment_track_like(target_track_id UUID)
-RETURNS VOID AS $$
+RETURNS VOID AS $
 BEGIN
   UPDATE tracks
   SET likes_count = likes_count + 1
   WHERE id = target_track_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. EXTENSIÓN Y FUNCIÓN DE BÚSQUEDA GLOBAL
 CREATE EXTENSION IF NOT EXISTS unaccent;
