@@ -19,7 +19,7 @@ import {
   Heart,
   ListMusic,
   Maximize2,
-} from 'lucide-react';
+} from '@/lib/lucide';
 
 function formatTime(seconds: number): string {
   if (!seconds || !isFinite(seconds)) return '0:00';

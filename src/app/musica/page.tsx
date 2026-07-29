@@ -12,7 +12,7 @@ import {
   ListMusic, 
   ChevronRight,
   Headphones
-} from 'lucide-react';
+} from '@/lib/lucide';
 import Link from 'next/link';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';

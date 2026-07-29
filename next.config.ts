@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    workerThreads: true,
+    turbopackPluginRuntimeStrategy: 'workerThreads',
+    cpus: 2,
+  },
 };
 
 export default nextConfig;

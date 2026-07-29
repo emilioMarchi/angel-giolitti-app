@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { Search, Music, Disc, FolderGit2, Play, Volume2 } from 'lucide-react';
+import { Search, Music, Disc, FolderGit2, Play, Volume2 } from '@/lib/lucide';
 import { useGlobalSearch, SearchTrack } from '@/hooks/useGlobalSearch';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { getR2Url } from '@/lib/utils';

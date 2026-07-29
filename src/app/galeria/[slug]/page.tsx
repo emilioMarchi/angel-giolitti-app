@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   Play,
   Camera,
-} from 'lucide-react';
+} from '@/lib/lucide';
 import { usePlayerStore } from '@/store/usePlayerStore';
 
 interface MediaAlbumDB {

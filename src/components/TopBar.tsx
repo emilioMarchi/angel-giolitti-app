@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Search, Music, Disc, FolderGit2, Volume2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Search, Music, Disc, FolderGit2, Volume2, Share2, MessageCircle, MessageSquare } from '@/lib/lucide';
 import { useGlobalSearch, SearchTrack } from '@/hooks/useGlobalSearch';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { getR2Url } from '@/lib/utils';
@@ -11,6 +11,7 @@ export default function TopBar() {
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
   const { results, loading } = useGlobalSearch(searchTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -68,6 +69,16 @@ export default function TopBar() {
     setSearchTerm('');
   };
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (shareOpen && panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setShareOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [shareOpen]);
+
   const showTracks = results.tracks.length > 0;
   const showAlbums = results.albums.length > 0;
   const showProjects = results.projects.length > 0;
@@ -79,6 +90,27 @@ export default function TopBar() {
     <>
       <header className="topbar">
         <div className="topbar-actions">
+          <div className="relative">
+            <button
+              onClick={() => setShareOpen(!shareOpen)}
+              className="topbar-profile-btn flex transition-colors"
+              aria-label="Compartir"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
+            {shareOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-white/10 rounded-lg shadow-xl py-2 z-50 animate-fade-in">
+                <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.share({ title: 'Ángel Giolitti', text: 'Escucha a Ángel Giolitti', url: window.location.href }); setShareOpen(false); }}>
+                  <MessageCircle className="h-4 w-4" />
+                  Compartir
+                </button>
+                <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.clipboard.writeText(window.location.href); setShareOpen(false); }}>
+                  <MessageSquare className="h-4 w-4" />
+                  Copiar enlace
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={toggleSearch}
             className={`topbar-profile-btn flex transition-colors ${isSearchOpen ? 'text-primary' : ''}`}

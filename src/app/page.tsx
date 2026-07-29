@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Play, Shuffle, Heart, MoreHorizontal, Clock, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users } from 'lucide-react';
+import { Play, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle } from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
@@ -41,6 +41,7 @@ interface EventDB {
 interface ArtistProfileDB {
   full_name: string;
   short_bio: string;
+  social_links: Record<string, string>;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -64,9 +65,11 @@ export default function HomePage() {
   const [discography, setDiscography] = useState<AlbumDB[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<EventDB[]>([]);
   const [artistBio, setArtistBio] = useState<string>('Músico · Compositor · Artista');
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const allImages = [
     getR2Url('images/gallery/handangel/photo-0.webp'),
@@ -153,14 +156,15 @@ export default function HomePage() {
           setUpcomingEvents(eventsData as EventDB[]);
         }
 
-        // 4. Bio del artista
+        // 4. Bio del artista + social links
         const { data: profileData } = await supabase
           .from('artist_profile')
-          .select('full_name, short_bio')
+          .select('full_name, short_bio, social_links')
           .maybeSingle();
 
         if (profileData) {
           setArtistBio((profileData as ArtistProfileDB).short_bio || 'Músico · Compositor · Artista');
+          setSocialLinks((profileData as ArtistProfileDB).social_links || {});
         }
 
       } catch (err) {
@@ -259,9 +263,27 @@ export default function HomePage() {
           <button className="artist-follow-btn">
             Seguir
           </button>
-          <button className="artist-more-btn" aria-label="Más opciones">
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShareOpen(!shareOpen)}
+              className="artist-more-btn"
+              aria-label="Compartir"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
+            {shareOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-white/10 rounded-lg shadow-xl py-2 z-50 animate-fade-in">
+                <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.share({ title: 'Ángel Giolitti', text: 'Escucha a Ángel Giolitti', url: window.location.href }); setShareOpen(false); }}>
+                  <MessageCircle className="h-4 w-4" />
+                  Compartir perfil
+                </button>
+                <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.clipboard.writeText(window.location.href); setShareOpen(false); }}>
+                  <MessageSquare className="h-4 w-4" />
+                  Copiar enlace
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -411,6 +433,31 @@ export default function HomePage() {
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      {/* ═══ CONECTAR ═══ */}
+      <section className="artist-section">
+        <h2 className="artist-section-title">Conectar</h2>
+        <div className="flex flex-wrap gap-3">
+          {socialLinks.instagram && (
+            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <MessageSquare className="h-4 w-4" />
+              <span>Instagram</span>
+            </a>
+          )}
+          {socialLinks.youtube && (
+            <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <Video className="h-4 w-4" />
+              <span>YouTube</span>
+            </a>
+          )}
+          {socialLinks.spotify && (
+            <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <Music className="h-4 w-4" />
+              <span>Spotify</span>
+            </a>
+          )}
         </div>
       </section>
 

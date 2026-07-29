@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Library } from 'lucide-react';
+import { Menu, X, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Library } from '@/lib/lucide';
 
 const mainNav = [
   { label: 'Inicio', href: '/', icon: Home },

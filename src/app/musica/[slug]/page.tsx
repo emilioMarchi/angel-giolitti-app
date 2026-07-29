@@ -11,7 +11,7 @@ import {
   Clock,
   Heart,
   ArrowLeft,
-} from 'lucide-react';
+} from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';

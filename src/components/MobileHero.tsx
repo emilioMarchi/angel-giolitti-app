@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User } from 'lucide-react';
+import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User } from '@/lib/lucide';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { usePlayerStore } from '@/store/usePlayerStore';

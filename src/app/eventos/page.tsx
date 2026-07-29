@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon, MessageCircle, Phone } from '@/lib/lucide';
 
 interface EventData {
   id: string;
@@ -181,7 +181,7 @@ export default function EventosPage() {
             </div>
 
             {/* Acciones */}
-            <div className="flex items-center gap-4 mt-10">
+            <div className="flex items-center gap-4 mt-10 flex-wrap">
               {!isPast && selectedEvent.ticket_url ? (
                 <a 
                   href={selectedEvent.ticket_url} 
@@ -201,6 +201,18 @@ export default function EventosPage() {
                   Evento Finalizado
                 </span>
               )}
+              
+              {/* Botón WhatsApp en detalle */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Me interesa el evento: ${selectedEvent.title} el ${getFullDateString(selectedEvent.event_date)} en ${selectedEvent.location_name}, ${selectedEvent.address_city}. ¿Me das más info?`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 text-white font-bold text-sm hover:bg-green-500 transition-colors"
+                aria-label={`Compartir evento ${selectedEvent.title} por WhatsApp`}
+              >
+                <Phone className="h-4 w-4" />
+                <span>WhatsApp</span>
+              </a>
             </div>
           </div>
         </div>
@@ -273,6 +285,19 @@ export default function EventosPage() {
                       Más info
                     </span>
                   )}
+                  
+                  {/* Botón WhatsApp */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Me interesa el evento: ${event.title} el ${getFullDateString(event.event_date)} en ${event.location_name}, ${event.address_city}. ¿Me das más info?`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-600 text-white text-xs font-bold hover:bg-green-500 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Compartir evento ${event.title} por WhatsApp`}
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">WhatsApp</span>
+                  </a>
                 </div>
               </div>
             ))}

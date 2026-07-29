@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import {
   Image as ImageIcon,
   Camera,
-} from 'lucide-react';
+} from '@/lib/lucide';
 import { getR2Url } from '@/lib/utils';
 
 interface MediaAlbum {

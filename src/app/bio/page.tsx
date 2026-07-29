@@ -18,7 +18,7 @@ import {
   Users,
   Disc3,
   Play,
-} from 'lucide-react';
+} from '@/lib/lucide';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';

@@ -13,7 +13,7 @@ import {
   Library,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from '@/lib/lucide';
 
 const mainNav = [
   { label: 'Inicio', href: '/', icon: Home },

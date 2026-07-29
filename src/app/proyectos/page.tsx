@@ -18,7 +18,7 @@ import {
   Pause,
   Disc3,
   Camera
-} from 'lucide-react';
+} from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { getR2Url } from '@/lib/utils';
 import Lightbox from 'yet-another-react-lightbox';
