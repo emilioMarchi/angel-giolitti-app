@@ -16,108 +16,51 @@ Sitio web SPA multimedia estilo Spotify para el artista **Ángel Giolitti**. Rep
 | Etapa 2: UI/UX & Reproductor Global | COMPLETADA |
 | Etapa 3: Módulos Públicos (SPA) | COMPLETADA |
 | Etapa 4: Panel de Administración | PENDIENTE |
-| **Etapa 5: Métricas, Seguridad, SEO** | **EN DESARROLLO (esta tarea)** |
+| **Etapa 5: Métricas, Seguridad, SEO** | **EN DESARROLLO (actual)** |
 | Etapa 6: QA, Despliegue y Entrega | PENDIENTE |
 
 ---
 
-## Instrucciones de log.md — Resumen
+## Plan: plan-mejoras.md (UI/UX — Independiente de Etapa 5)
 
-Las instrucciones definen el módulo de métricas y rankeo con **foco exclusivo en audio/tracks**:
+Solo las 4 fases del plan de mejoras visuales/UX:
 
-### 1. Métricas por Track
-- **`play_count`**: Se incrementa en +1 mediante la RPC `increment_track_play` una vez que el reproductor registra **10 a 15 segundos continuos** de audio.
-- **`likes_count`**: Se incrementa en +1 mediante la RPC `increment_track_like`. El estado visual del corazón se persiste en **localStorage** para evitar votos duplicados por usuario sin requerir registro.
+### 🟢 Fase 1: Ajustes de UI y Maquetado Rápido (Baja complejidad)
 
-### 2. Métricas Globales del Artista (único perfil)
-- **Total de Reproducciones Acumuladas**: suma de `play_count` de todos los tracks.
-- **Total de "Me Gusta"**: suma de `likes_count` de todos los tracks.
-- **Top Canciones**: `SELECT * FROM tracks ORDER BY play_count DESC LIMIT 10`
-- **Top Favoritas**: `SELECT * FROM tracks ORDER BY likes_count DESC LIMIT 10`
+Cambios visuales, accesos directos y componentes simples sin estado complejo ni backend.
 
-### 3. Cambios en el Schema SQL
-- **Eliminar tabla `page_views`**: No se acumulan registros innecesarios en PostgreSQL.
-- **Agregar RPC `decrement_track_like`**: Para desmarcar "Me Gusta".
-- **Agregar RPC `get_artist_metrics`**: Retorna totales acumulados (plays, likes, tracks) en una sola llamada.
-- **Agregar índices**: `idx_tracks_play_count` y `idx_tracks_likes_count`.
+- [ ] **Sección "Conectar" en /home:** Links directos a Instagram, YouTube, Spotify
+- [ ] **Botón WhatsApp en /eventos:** Botón con mensaje predefinido por evento (lista + detalle)
+- [ ] **Acción de Compartir:** Menú 3 puntos (...) con opciones share
+- [ ] **Cabecera / Hero en /home:** Reubicar Play button (desktop), Seguir, 3 puntos arriba de "Populares"
 
 ---
 
-## Análisis: Estado Actual vs. Requerido
+### 🟡 Fase 2: Layout Responsive, Unificación de Búsqueda y Navegación (Media)
 
-### Base de Datos (`schema.sql`)
+Refactorización UX/UI, unificación de componentes de búsqueda y navegación mobile.
 
-| Elemento | Estado actual | Acción |
-|---|---|---|
-| Tabla `tracks` con `play_count`, `likes_count` | Existe | OK — Sin cambios |
-| RPC `increment_track_play` | Existe | OK — Sin cambios |
-| RPC `increment_track_like` | Existe | OK — Sin cambios |
-| RPC `decrement_track_like` | **NO existe** | **CREAR** — Agregar al `schema.sql` y ejecutar en Supabase |
-| RPC `get_artist_metrics` | **NO existe** | **CREAR** — Agregar al `schema.sql` y ejecutar en Supabase |
-| Índice `idx_tracks_play_count` | **NO existe** | **CREAR** |
-| Índice `idx_tracks_likes_count` | **NO existe** | **CREAR** |
-| Tabla `page_views` + policies | Existe | **ELIMINAR** de `schema.sql` y ejecutar `DROP TABLE` en Supabase |
-| `global_search` con métricas | Existe pero sin `play_count`/`likes_count` en SELECT de tracks | **ACTUALIZAR** |
-
-### Frontend
-
-| Elemento | Estado actual | Acción |
-|---|---|---|
-| `GlobalAudioPlayer` — tracking de plays | Sin funcionalidad | **IMPLEMENTAR**: llamar `increment_track_play` tras 10-15s de playback continuo, con flag anti-duplicado por sesión |
-| `GlobalAudioPlayer` — botón Heart (like) | Icono placeholder, sin handler | **IMPLEMENTAR**: verificar localStorage → llamar `increment_track_like` o `decrement_track_like` → toggle visual |
-| `usePlayerStore` — estado de likes | No existe | **CREAR**: Set de liked track IDs persistido en localStorage via Zustand `persist` |
-| Home (`page.tsx`) — mostrar métricas | Sin métricas | **CREAR** sección de Top Tracks (por plays) y Top Favoritas (por likes), totales acumulados |
-| Utilidad para llamar RPCs de métricas | No existe | **CREAR** función helper en `src/lib/supabase.ts` o archivo dedicado |
+- [ ] **Unificación del Buscador:** Eliminar versión sidebar, centralizar en TopBar con input + dropdown resultados estilo Spotify (sin solapar pantalla completa)
+- [ ] **Navegador Mobile:** Anclar barra sobre banner, Home + Búsqueda visibles, hamburguesa para resto
 
 ---
 
-## Plan de Tareas (Desarrollo)
+### 🟠 Fase 3: Reproductor de Audio y Estado Global (Media-Alta)
 
-### Tarea 1: Actualizar Schema SQL
-- [ ] Agregar RPC `decrement_track_like(target_track_id UUID)` al `schema.sql`
-- [ ] Agregar RPC `get_artist_metrics()` al `schema.sql`
-- [ ] Agregar índices `idx_tracks_play_count` y `idx_tracks_likes_count`
-- [ ] Eliminar tabla `page_views`, sus policies RLS y el `INSERT` público
-- [ ] Actualizar `global_search` para incluir `play_count` y `likes_count` en el SELECT de tracks
-- [ ] Ejecutar script actualizado en Supabase (o crear script de migración)
+Lógica de reproducción, sincronización entre componentes y reproductor global.
 
-### Tarea 2: Funciones Helper de Supabase
-- [ ] Crear `src/lib/metrics.ts` con funciones:
-  - `incrementPlay(trackId)` → llama `increment_track_play`
-  - `incrementLike(trackId)` → llama `increment_track_like`
-  - `decrementLike(trackId)` → llama `decrement_track_like`
-  - `getArtistMetrics()` → llama `get_artist_metrics`
+- [ ] **Sync play/pause Home:** Botón Play/Pause principal sincronizado con `usePlayerStore`
+- [ ] **Shuffle:** Lógica reproducción no lineal, sincronizada con queue
 
-### Tarea 3: Store de Likes (localStorage)
-- [ ] Agregar al `usePlayerStore` (o crear store separado `useLikesStore`):
-  - Estado: `likedTrackIds: string[]` (IDs de tracks con like activo)
-  - Persistencia: Zustand `persist` middleware → localStorage key `angel-giolitti-likes`
-  - Acciones: `toggleLike(trackId)` que:
-    1. Verifica si el track ya está en `likedTrackIds`
-    2. Si está → llama `decrementLike` y lo quita del Set
-    3. Si no está → llama `incrementLike` y lo agrega al Set
+---
 
-### Tarea 4: Tracking de Plays en GlobalAudioPlayer
-- [ ] En `GlobalAudioPlayer.tsx`, agregar `useEffect` que monitoree `progress`:
-  - Cuando `progress >= 10` (segundos) y el track actual tiene `id` válido:
-    1. Verificar si ya se registró un play para este track en esta sesión (ref o Set en memoria)
-    2. Si no se registró → llamar `incrementPlay(currentTrack.id)` y marcar como registrado
-    3. Resetear flag cuando cambie el track (`currentTrack.id` cambia)
-  - **No registrar play si el audio fue muted durante los primeros 10 segundos** (opcional, según spec)
+### 🔴 Fase 4: Base de Datos, Arquitectura y Algoritmos (Alta)
 
-### Tarea 5: Botón Heart Funcional
-- [ ] En `GlobalAudioPlayer.tsx`, implementar handler del botón Heart:
-  - Leer `likedTrackIds` del store
-  - Mostrar `Heart` relleno (fill) si el track actual está liked, outline si no
-  - On click → `toggleLike(currentTrack.id)`
-- [ ] Estilo visual: color turquesa/rojo cuando está activo
+Backend, estructura de datos y cálculo de contenido dinámico.
 
-### Tarea 6: Mostrar Métricas en el Home
-- [ ] En `src/app/page.tsx`, agregar sección con:
-  - Totales acumulados (reproducciones, likes, total de tracks)
-  - Top 10 canciones por `play_count`
-  - Top 10 favoritas por `likes_count`
-  - Diseño consistente con el estilo Spotify existente (cards oscuras, acentos turquesa)
+- [ ] **Auditoría DB Playlists:** Verificar esquema soporta creación/guardado/persistencia
+- [ ] **Algoritmo "Populares":** Query ordenada por `play_count` (últimos 30d / total)
+- [ ] **Secciones dinámicas Home:** Integrar Eventos/Próximos, Multimedia, Playlists
 
 ---
 
@@ -125,26 +68,28 @@ Las instrucciones definen el módulo de métricas y rankeo con **foco exclusivo 
 
 ```
 angel-giolitti/
-├── schema.sql                          # DDL Supabase (ACTUALIZAR)
-├── log.md                              # Instrucciones del cliente
+├── schema.sql                          # DDL Supabase (Fase 4)
+├── log.md                              # Instrucciones cliente
 ├── AGENTS.md                           # Este archivo
-├── PLAN_DESARROLLO.md                  # Plan general del proyecto
+├── PLAN_DESARROLLO.md                  # Plan general
+├── plan-mejoras.md                     # Este plan (fuente de verdad)
 ├── src/
 │   ├── lib/
 │   │   ├── supabase.ts                 # Cliente Supabase browser
 │   │   ├── r2.ts                       # Cliente Cloudflare R2
 │   │   └── utils.ts                    # cn() + getR2Url()
 │   ├── store/
-│   │   └── usePlayerStore.ts           # Store Zustand del reproductor (MODIFICAR)
+│   │   └── usePlayerStore.ts           # MODIFICAR (Fase 3: shuffle, sync)
 │   ├── components/
-│   │   ├── GlobalAudioPlayer.tsx       # Reproductor persistente (MODIFICAR)
-│   │   ├── Sidebar.tsx
-│   │   ├── TopBar.tsx
-│   │   └── MobileHero.tsx
+│   │   ├── GlobalAudioPlayer.tsx       # MODIFICAR (Fase 3)
+│   │   ├── Sidebar.tsx                 # MODIFICAR (Fase 2: quitar buscador)
+│   │   ├── TopBar.tsx                  # MODIFICAR (Fase 2: buscador unificado, Fase 1: share menu)
+│   │   └── MobileHero.tsx              # MODIFICAR (Fase 1: hero reorder)
 │   └── app/
-│       ├── layout.tsx                  # Layout raíz
-│       ├── page.tsx                    # Home (MODIFICAR)
-│       ├── globals.css                 # Design tokens
+│       ├── layout.tsx
+│       ├── page.tsx                    # MODIFICAR (Fase 1: Conectar, Hero; Fase 4: Populares, secciones dinámicas)
+│       ├── eventos/page.tsx            # MODIFICAR (Fase 1: WhatsApp button)
+│       ├── globals.css
 │       └── ...
 ```
 
@@ -155,8 +100,8 @@ angel-giolitti/
 - **Componentes**: `'use client'` directiva arriba del archivo
 - **Estilos**: Tailwind CSS + clases CSS custom en `globals.css` (patrón Spotify dark)
 - **Estado global**: Zustand con `persist` middleware para datos en localStorage
-- **Supabase**: Cliente en `src/lib/supabase.ts`, queries inline en componentes (sin capa de servicios separada)
-- **RPCs**: Se llaman con `supabase.rpc('nombre_funcion', { param: value })`
+- **Supabase**: Cliente en `src/lib/supabase.ts`, queries inline en componentes
+- **RPCs**: `supabase.rpc('nombre_funcion', { param: value })`
 - **R2 URLs**: Resolver con `getR2Url(path)` de `src/lib/utils.ts`
-- **Tipos**: Interfaces definidas localmente en cada archivo (sin carpeta shared/types)
+- **Tipos**: Interfaces definidas localmente en cada archivo
 - **Sin comentarios** en el código salvo que se soliciten explícitamente
