@@ -1,168 +1,153 @@
 ## Error Type
-Console Error
+Build Error
 
 ## Error Message
-A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+Export Instagram doesn't exist in target module
 
-- A server/client branch `if (typeof window !== 'undefined')`.
-- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
-- Date formatting in a user's locale which doesn't match the server.
-- External changing data without sending a snapshot of it along with the HTML.
-- Invalid HTML tag nesting.
+## Build Output
+./src/lib/lucide.tsx:13:1
+Export Instagram doesn't exist in target module
+  11 | }
+  12 |
+> 13 | import {
+     | ^^^^^^^
+> 14 |   Home as _Home,
+     | ^^^^^^^^^^^^^^^^
+> 15 |   Search as _Search,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 16 |   Music2 as _Music2,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 17 |   FolderOpen as _FolderOpen,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 18 |   CalendarDays as _CalendarDays,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |   Images as _Images,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 20 |   User as _User,
+     | ^^^^^^^^^^^^^^^^
+> 21 |   Library as _Library,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 22 |   ChevronLeft as _ChevronLeft,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 23 |   ChevronRight as _ChevronRight,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |   Play as _Play,
+     | ^^^^^^^^^^^^^^^^
+> 25 |   Pause as _Pause,
+     | ^^^^^^^^^^^^^^^^^^
+> 26 |   Shuffle as _Shuffle,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 27 |   Repeat as _Repeat,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 28 |   Heart as _Heart,
+     | ^^^^^^^^^^^^^^^^^^
+> 29 |   MoreHorizontal as _MoreHorizontal,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 30 |   Clock as _Clock,
+     | ^^^^^^^^^^^^^^^^^^
+> 31 |   Disc3 as _Disc3,
+     | ^^^^^^^^^^^^^^^^^^
+> 32 |   Headphones as _Headphones,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 33 |   CheckCircle2 as _CheckCircle2,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 34 |   Users as _Users,
+     | ^^^^^^^^^^^^^^^^^^
+> 35 |   Music as _Music,
+     | ^^^^^^^^^^^^^^^^^^
+> 36 |   ArrowLeft as _ArrowLeft,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 37 |   ListMusic as _ListMusic,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 38 |   SkipBack as _SkipBack,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 39 |   SkipForward as _SkipForward,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 40 |   Volume2 as _Volume2,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 41 |   VolumeX as _VolumeX,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 42 |   Volume1 as _Volume1,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 43 |   Maximize2 as _Maximize2,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |   X as _X,
+     | ^^^^^^^^^^
+> 45 |   Disc as _Disc,
+     | ^^^^^^^^^^^^^^^^
+> 46 |   FolderGit2 as _FolderGit2,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |   Menu as _Menu,
+     | ^^^^^^^^^^^^^^^^
+> 48 |   Calendar as _Calendar,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |   MapPin as _MapPin,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 50 |   Ticket as _Ticket,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 51 |   ExternalLink as _ExternalLink,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |   Camera as _Camera,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 53 |   FileText as _FileText,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 54 |   Download as _Download,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |   MessageSquare as _MessageSquare,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 56 |   Send as _Send,
+     | ^^^^^^^^^^^^^^^^
+> 57 |   Globe as _Globe,
+     | ^^^^^^^^^^^^^^^^^^
+> 58 |   PlayCircle as _PlayCircle,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 59 |   Video as _Video,
+     | ^^^^^^^^^^^^^^^^^^
+> 60 |   Clapperboard as _Clapperboard,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 61 |   Image as _Image,
+     | ^^^^^^^^^^^^^^^^^^
+> 62 |   Share2 as _Share2,
+     | ^^^^^^^^^^^^^^^^^^^^
+> 63 |   MessageCircle as _MessageCircle,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 64 |   Phone as _Phone,
+     | ^^^^^^^^^^^^^^^^^^
+> 65 |   Instagram as _Instagram,
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 66 |   Youtube as _Youtube,
+     | ^^^^^^^^^^^^^^^^^^^^^^
+> 67 | } from 'lucide-react';
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  68 |
+  69 | export const Home = withSSR(_Home, 'Home');
+  70 | export const Search = withSSR(_Search, 'Search');
 
-It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+The export Instagram was not found in module [project]/node_modules/lucide-react/dist/esm/lucide-react.mjs [app-client] (ecmascript).
+Did you mean to import Star?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
 
-https://react.dev/link/hydration-mismatch
+Import traces:
+  #1 [Client Component Browser]:
+    ./src/lib/lucide.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
 
-  ...
-    <HTTPAccessFallbackErrorBoundary pathname="/" notFound={{...}} forbidden={undefined} unauthorized={undefined} ...>
-      <RedirectBoundary>
-        <RedirectErrorBoundary router={{...}}>
-          <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
-            <SegmentViewNode type="page" pagePath="page.tsx">
-              <SegmentTrieNode>
-              <ClientPageRoot Component={function HomePage} serverProvidedParams={{...}}>
-                <HomePage params={Promise} searchParams={Promise}>
-                  <div className="artist-pro...">
-                    <header>
-                    <div>
-                    <section>
-                    <section>
-                    <section className="artist-sec...">
-                      <h2>
-                      <div className="home-quick...">
-                        <LinkComponent href="/proyectos" className="quick-acce...">
-                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
-                            <div
-                              className="quick-access-icon"
-                              style={{
-+                               background: "var(--accent-blue)"
--                               background-image: ""
--                               background-position-x: ""
--                               background-position-y: ""
--                               background-size: ""
--                               background-repeat: ""
--                               background-attachment: ""
--                               background-origin: ""
--                               background-clip: ""
--                               background-color: ""
--                               --darkreader-inline-bg: "var(--darkreader-bg--accent-blue)"
-                              }}
--                             data-darkreader-inline-bg=""
-                            >
-                            ...
-                        <LinkComponent href="/galeria" className="quick-acce...">
-                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
-                            <div
-                              className="quick-access-icon"
-                              style={{
-+                               background: "var(--accent-orange)"
--                               background-image: ""
--                               background-position-x: ""
--                               background-position-y: ""
--                               background-size: ""
--                               background-repeat: ""
--                               background-attachment: ""
--                               background-origin: ""
--                               background-clip: ""
--                               background-color: ""
--                               --darkreader-inline-bg: "var(--darkreader-bg--accent-orange)"
-                              }}
--                             data-darkreader-inline-bg=""
-                            >
-                            ...
-                        <LinkComponent href="/bio" className="quick-acce...">
-                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
-                            <div
-                              className="quick-access-icon"
-                              style={{
-+                               background: "var(--accent-pink)"
--                               background-image: ""
--                               background-position-x: ""
--                               background-position-y: ""
--                               background-size: ""
--                               background-repeat: ""
--                               background-attachment: ""
--                               background-origin: ""
--                               background-clip: ""
--                               background-color: ""
--                               --darkreader-inline-bg: "var(--darkreader-bg--accent-pink)"
-                              }}
--                             data-darkreader-inline-bg=""
-                            >
-                            ...
-                    ...
-            ...
-          ...
+  #2 [Client Component SSR]:
+    ./src/lib/lucide.tsx [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
 
+  #3 [Client Component Browser]:
+    ./src/lib/lucide.tsx [Client Component Browser]
+    ./src/components/GlobalAudioPlayer.tsx [Client Component Browser]
+    ./src/components/GlobalAudioPlayer.tsx [Server Component]
+    ./src/app/layout.tsx [Server Component]
 
-
-    at div (<anonymous>:null:null)
-    at <unknown> (src/app/page.tsx:522:17)
-    at Array.map (<anonymous>:null:null)
-    at HomePage (src/app/page.tsx:518:13)
-
-## Code Frame
-  520 |             return (
-  521 |               <Link key={i} href={item.href} className="quick-access-card">
-> 522 |                 <div className="quick-access-icon" style={{ background: item.color }}>
-      |                 ^
-  523 |                   <Icon className="h-5 w-5 text-white" />
-  524 |                 </div>
-  525 |                 <span className="quick-access-label">{item.title}</span>
+  #4 [Client Component SSR]:
+    ./src/lib/lucide.tsx [Client Component SSR]
+    ./src/components/GlobalAudioPlayer.tsx [Client Component SSR]
+    ./src/components/GlobalAudioPlayer.tsx [Server Component]
+    ./src/app/layout.tsx [Server Component]
 
 Next.js version: 16.2.12 (Turbopack)
-
----
-
-## SQL para Supabase — Actualizar global_search (imágenes de proyectos)
-
-Ejecutar en **SQL Editor de Supabase**:
-
-```sql
--- Actualizar función global_search para incluir imágenes de proyectos
-CREATE OR REPLACE FUNCTION global_search(query_text TEXT)
-RETURNS JSON AS $body$
-DECLARE
-  result JSON;
-BEGIN
-  SELECT json_build_object(
-    'tracks', (
-      SELECT COALESCE(json_agg(t), '[]'::json)
-      FROM (
-        SELECT tr.id, tr.album_id, tr.title, tr.audio_url, tr.duration_seconds, tr.track_order, tr.play_count, tr.likes_count,
-               al.title as album_title, al.cover_url,
-               pr.title as project_title, pr.slug as project_slug
-        FROM tracks tr
-        LEFT JOIN albums al ON tr.album_id = al.id
-        LEFT JOIN projects pr ON al.project_id = pr.id
-        WHERE unaccent(tr.title) ILIKE unaccent('%' || query_text || '%')
-        LIMIT 5
-      ) t
-    ),
-    'albums', (
-      SELECT COALESCE(json_agg(a), '[]'::json)
-      FROM (
-        SELECT al.id, al.title, al.type, al.release_year, al.cover_url, al.slug,
-               pr.title as project_title, pr.slug as project_slug
-        FROM albums al
-        LEFT JOIN projects pr ON al.project_id = pr.id
-        WHERE unaccent(al.title) ILIKE unaccent('%' || query_text || '%')
-        LIMIT 5
-      ) a
-    ),
-    'projects', (
-      SELECT COALESCE(json_agg(p), '[]'::json)
-      FROM (
-        SELECT id, title, category, creation_year, main_video_url, slug, profile_image_url, cover_image_url
-        FROM projects
-        WHERE unaccent(title) ILIKE unaccent('%' || query_text || '%')
-        LIMIT 5
-      ) p
-    )
-  ) INTO result;
-
-  RETURN result;
-END;
-$body$ LANGUAGE plpgsql SECURITY DEFINER;
-```

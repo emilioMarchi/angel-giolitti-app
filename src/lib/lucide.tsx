@@ -21,6 +21,8 @@ import {
   Library as _Library,
   ChevronLeft as _ChevronLeft,
   ChevronRight as _ChevronRight,
+  ChevronUp as _ChevronUp,
+  ChevronDown as _ChevronDown,
   Play as _Play,
   Pause as _Pause,
   Shuffle as _Shuffle,
@@ -74,6 +76,8 @@ export const User = withSSR(_User, 'User');
 export const Library = withSSR(_Library, 'Library');
 export const ChevronLeft = withSSR(_ChevronLeft, 'ChevronLeft');
 export const ChevronRight = withSSR(_ChevronRight, 'ChevronRight');
+export const ChevronUp = withSSR(_ChevronUp, 'ChevronUp');
+export const ChevronDown = withSSR(_ChevronDown, 'ChevronDown');
 export const Play = withSSR(_Play, 'Play');
 export const Pause = withSSR(_Pause, 'Pause');
 export const Shuffle = withSSR(_Shuffle, 'Shuffle');

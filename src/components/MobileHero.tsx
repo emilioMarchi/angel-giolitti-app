@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Menu, X } from '@/lib/lucide';
+import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Menu, X, Share2, MessageCircle, MessageSquare, Video, Music } from '@/lib/lucide';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { usePlayerStore } from '@/store/usePlayerStore';
@@ -29,8 +29,10 @@ export default function MobileHero() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [artistBio, setArtistBio] = useState('Músico · Compositor · Artista');
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const pathname = usePathname();
   const isFollowing = usePlayerStore((state) => state.isFollowing);
@@ -57,11 +59,12 @@ export default function MobileHero() {
   useEffect(() => {
     supabase
       .from('artist_profile')
-      .select('short_bio, followers_count')
+      .select('short_bio, followers_count, social_links')
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setArtistBio((data as { short_bio: string }).short_bio || 'Músico · Compositor · Artista');
+          setSocialLinks((data as { social_links: Record<string, string> }).social_links || {});
         }
       });
   }, []);
@@ -72,6 +75,7 @@ export default function MobileHero() {
 
   useEffect(() => {
     setIsMenuOpen(false);
+    setShareOpen(false);
   }, [pathname]);
 
   if (!isMobile) return null;
@@ -159,6 +163,45 @@ export default function MobileHero() {
             >
               <Search className="h-5 w-5" />
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setShareOpen(!shareOpen)}
+                className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+                aria-label="Compartir"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              {shareOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-background border border-white/10 rounded-lg shadow-xl py-2 z-50 animate-fade-in">
+                  <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.share({ title: 'Ángel Giolitti', text: 'Escucha a Ángel Giolitti', url: window.location.href }); setShareOpen(false); }}>
+                    <MessageCircle className="h-4 w-4" />
+                    Compartir perfil
+                  </button>
+                  <button className="flex items-center gap-3 px-4 py-2 text-sm text-white hover:bg-white/5 w-full text-left" onClick={() => { navigator.clipboard.writeText(window.location.href); setShareOpen(false); }}>
+                    <MessageSquare className="h-4 w-4" />
+                    Copiar enlace
+                  </button>
+                  {socialLinks.instagram && (
+                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <MessageSquare className="h-4 w-4" />
+                      Instagram
+                    </a>
+                  )}
+                  {socialLinks.youtube && (
+                    <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <Video className="h-4 w-4" />
+                      YouTube
+                    </a>
+                  )}
+                  {socialLinks.spotify && (
+                    <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <Music className="h-4 w-4" />
+                      Spotify
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               onClick={() => { setIsMenuOpen(!isMenuOpen); setIsSearchOpen(false); }}
               className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
@@ -305,7 +348,7 @@ export default function MobileHero() {
                     )}
                     {results.tracks.length === 0 && results.albums.length === 0 && results.projects.length === 0 && !loading && searchTerm.length >= 2 && (
                       <p className="text-sm text-muted-foreground text-center py-6">
-                        No se encontraron resultados para "{searchTerm}"
+                        No se encontraron resultados para {searchTerm}
                       </p>
                     )}
                     {searchTerm.length < 2 && !loading && (

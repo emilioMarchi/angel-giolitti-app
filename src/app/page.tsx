@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Play, Pause, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle, Image, ListMusic } from '@/lib/lucide';
+import { Play, Pause, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle, Image, ListMusic, ChevronUp, ChevronDown } from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
@@ -88,6 +88,7 @@ export default function HomePage() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [showMorePopular, setShowMorePopular] = useState(false);
 
   const allImages = [
     getR2Url('images/gallery/handangel/photo-0.webp'),
@@ -290,6 +291,23 @@ export default function HomePage() {
           <button className="artist-follow-btn">
             Seguir
           </button>
+          <div className="flex items-center gap-1.5 ml-3">
+            {socialLinks.instagram && (
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-[rgb(var(--instagram))] hover:bg-[rgb(var(--instagram))/10] transition-colors" aria-label="Instagram">
+                <MessageSquare className="h-4.5 w-4.5" />
+              </a>
+            )}
+            {socialLinks.youtube && (
+              <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors" aria-label="YouTube">
+                <Video className="h-4.5 w-4.5" />
+              </a>
+            )}
+            {socialLinks.spotify && (
+              <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-green-500 hover:bg-green-500/10 transition-colors" aria-label="Spotify">
+                <Music className="h-4.5 w-4.5" />
+              </a>
+            )}
+          </div>
           <div className="relative">
             <button
               onClick={() => setShareOpen(!shareOpen)}
@@ -320,54 +338,75 @@ export default function HomePage() {
 
         <div className="track-list">
           {popularTracks.length > 0 ? (
-            popularTracks.map((track, i) => {
-              const isCurrent = currentTrack?.id === track.id;
-              return (
-                <div
-                  key={track.id}
-                  className={`track-row ${isCurrent ? 'track-row--active' : ''}`}
-                  onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
-                >
-                  <div className="track-row-number">
-                    {isCurrent && isPlaying ? (
-                      <div className="track-eq">
-                        <span /><span /><span /><span />
-                      </div>
-                    ) : (
-                      <span className="track-index">{i + 1}</span>
-                    )}
-                    <Play className="track-play-icon" fill="currentColor" />
-                  </div>
-
-                  <div className="track-row-cover">
-                    {track.cover_url ? (
-                      <img src={getR2Url(track.cover_url)} alt={track.album_title} className="w-full h-full object-cover rounded" />
-                    ) : (
-                      <Disc3 className="h-5 w-5 text-muted-foreground/40" />
-                    )}
-                  </div>
-
-                  <div className="track-row-info">
-                    <div className="track-row-text">
-                      <span className={`track-row-title ${isCurrent ? 'text-primary' : ''}`}>
-                        {track.title}
-                      </span>
-                      <span className="track-row-album">{track.album_title}</span>
+            <>
+              {(showMorePopular ? popularTracks.slice(0, 10) : popularTracks.slice(0, 5)).map((track, i) => {
+                const isCurrent = currentTrack?.id === track.id;
+                const displayIndex = i + 1;
+                return (
+                  <div
+                    key={track.id}
+                    className={`track-row ${isCurrent ? 'track-row--active' : ''}`}
+                    onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
+                  >
+                    <div className="track-row-number">
+                      {isCurrent && isPlaying ? (
+                        <div className="track-eq">
+                          <span /><span /><span /><span />
+                        </div>
+                      ) : (
+                        <span className="track-index">{displayIndex}</span>
+                      )}
+                      <Play className="track-play-icon" fill="currentColor" />
                     </div>
-                  </div>
 
-                  <div className="track-row-actions">
-                    <button className="track-like-btn" aria-label="Me gusta">
-                      <Heart className="h-4 w-4" />
-                    </button>
-                  </div>
+                    <div className="track-row-cover">
+                      {track.cover_url ? (
+                        <img src={getR2Url(track.cover_url)} alt={track.album_title} className="w-full h-full object-cover rounded" />
+                      ) : (
+                        <Disc3 className="h-5 w-5 text-muted-foreground/40" />
+                      )}
+                    </div>
 
-                  <span className="track-row-duration">
-                    {formatDuration(track.duration_seconds)}
-                  </span>
-                </div>
-              );
-            })
+                    <div className="track-row-info">
+                      <div className="track-row-text">
+                        <span className={`track-row-title ${isCurrent ? 'text-primary' : ''}`}>
+                          {track.title}
+                        </span>
+                        <span className="track-row-album">{track.album_title}</span>
+                      </div>
+                    </div>
+
+                    <div className="track-row-actions">
+                      <button className="track-like-btn" aria-label="Me gusta">
+                        <Heart className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <span className="track-row-duration">
+                      {formatDuration(track.duration_seconds)}
+                    </span>
+                  </div>
+                );
+              })}
+              {popularTracks.length > 5 && (
+                <button
+                  onClick={() => setShowMorePopular(!showMorePopular)}
+                  className="w-full mt-3 px-4 py-2.5 text-sm font-medium text-white/70 hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  {showMorePopular ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Mostrar menos
+                    </>
+                  ) : (
+                    <>
+                      Mostrar más
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           ) : !loading ? (
             <div className="text-center py-8 text-muted-foreground">
               <Headphones className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
