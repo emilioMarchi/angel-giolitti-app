@@ -254,12 +254,16 @@ export default function MobileHero() {
                           {results.albums.slice(0, 3).map((album) => (
                             <Link
                               key={album.id}
-                              href={`/musica?album=${album.slug}`}
+                              href={`/musica/${album.slug}`}
                               className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
                               onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
                             >
                               <div className="w-8 h-8 rounded bg-neutral-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                <FolderOpen className="w-3 h-3 text-muted-foreground" />
+                                {album.cover_url ? (
+                                  <img src={getR2Url(album.cover_url)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <FolderOpen className="w-3 h-3 text-muted-foreground" />
+                                )}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-white truncate">{album.title}</p>
@@ -283,8 +287,12 @@ export default function MobileHero() {
                               className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
                               onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
                             >
-                              <div className="w-8 h-8 rounded bg-neutral-900 flex items-center justify-center flex-shrink-0">
-                                <Music2 className="w-3.5 h-3.5 text-muted-foreground" />
+                              <div className="w-8 h-8 rounded bg-neutral-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                {(project.cover_image_url || project.profile_image_url) ? (
+                                  <img src={getR2Url(project.cover_image_url || project.profile_image_url!)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Music2 className="w-3.5 h-3.5 text-muted-foreground" />
+                                )}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-white truncate">{project.title}</p>

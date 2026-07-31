@@ -32,6 +32,8 @@ export interface SearchProject {
   creation_year: number;
   main_video_url: string | null;
   slug: string;
+  profile_image_url?: string | null;
+  cover_image_url?: string | null;
 }
 
 export interface SearchResults {

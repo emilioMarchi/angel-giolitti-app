@@ -298,7 +298,7 @@ BEGIN
     'projects', (
       SELECT COALESCE(json_agg(p), '[]'::json)
       FROM (
-        SELECT id, title, category, creation_year, main_video_url, slug
+        SELECT id, title, category, creation_year, main_video_url, slug, profile_image_url, cover_image_url
         FROM projects
         WHERE unaccent(title) ILIKE unaccent('%' || query_text || '%')
         LIMIT 5
