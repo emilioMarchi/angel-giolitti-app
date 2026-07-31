@@ -35,6 +35,7 @@ export default function MobileHero() {
   const pathname = usePathname();
   const isFollowing = usePlayerStore((state) => state.isFollowing);
   const toggleFollow = usePlayerStore((state) => state.toggleFollow);
+  const playTrack = usePlayerStore((state) => state.playTrack);
   const { results, loading } = useGlobalSearch(searchTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,11 +211,23 @@ export default function MobileHero() {
                         </h3>
                         <div className="space-y-1">
                           {results.tracks.slice(0, 5).map((track) => (
-                            <Link
+                            <button
                               key={track.id}
-                              href={`/musica?track=${track.id}`}
-                              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
-                              onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
+                              onClick={() => {
+                                playTrack({
+                                  id: track.id,
+                                  album_id: track.album_id,
+                                  title: track.title,
+                                  audio_url: getR2Url(track.audio_url),
+                                  duration_seconds: track.duration_seconds,
+                                  track_order: track.track_order,
+                                  album_title: track.album_title,
+                                  cover_url: track.cover_url ? getR2Url(track.cover_url) : undefined,
+                                });
+                                setIsSearchOpen(false);
+                                setSearchTerm('');
+                              }}
+                              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition w-full text-left"
                             >
                               <div className="w-8 h-8 rounded bg-neutral-900 flex-shrink-0 overflow-hidden flex items-center justify-center">
                                 {track.cover_url ? (
@@ -227,7 +240,7 @@ export default function MobileHero() {
                                 <p className="text-sm font-medium truncate text-white">{track.title}</p>
                                 <p className="text-xs text-muted-foreground truncate">{track.album_title}</p>
                               </div>
-                            </Link>
+                            </button>
                           ))}
                         </div>
                       </div>
