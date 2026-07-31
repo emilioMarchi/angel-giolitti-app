@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Play, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle } from '@/lib/lucide';
+import { Play, Pause, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle, Image, ListMusic } from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
@@ -44,6 +44,22 @@ interface ArtistProfileDB {
   social_links: Record<string, string>;
 }
 
+interface MediaAlbumDB {
+  id: string;
+  title: string;
+  slug: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+}
+
+interface PlaylistDB {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
+  is_official: boolean;
+}
+
 function formatDuration(seconds: number | null): string {
   if (!seconds) return '0:00';
   const mins = Math.floor(seconds / 60);
@@ -60,10 +76,12 @@ function formatEventDate(isoString: string): { day: string; month: string } {
 }
 
 export default function HomePage() {
-  const { playTrack, playQueue, currentTrack, isPlaying, togglePlay, setPopularTracks: setStorePopularTracks } = usePlayerStore();
+  const { playTrack, playQueue, currentTrack, isPlaying, togglePlay, toggleShuffle, isShuffle, setPopularTracks: setStorePopularTracks } = usePlayerStore();
   const [popularTracks, setPopularTracks] = useState<Track[]>([]);
   const [discography, setDiscography] = useState<AlbumDB[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<EventDB[]>([]);
+  const [mediaAlbums, setMediaAlbums] = useState<MediaAlbumDB[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistDB[]>([]);
   const [artistBio, setArtistBio] = useState<string>('Músico · Compositor · Artista');
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -95,42 +113,23 @@ export default function HomePage() {
       try {
         setLoading(true);
 
-        // 1. Últimos tracks por fecha de álbum/single (release_year DESC, track_order ASC)
-        const { data: recentAlbums } = await supabase
-          .from('albums')
-          .select('id, release_year')
-          .order('release_year', { ascending: false })
-          .limit(3);
+        // 1. Tracks populares por play_count (RPC)
+        const { data: popularData, error: popularError } = await supabase
+          .rpc('get_popular_tracks', { limit_count: 10 });
 
-        if (recentAlbums && recentAlbums.length > 0) {
-          const albumIds = recentAlbums.map((a) => a.id);
-          const { data: tracksData } = await supabase
-            .from('tracks')
-            .select('id, album_id, title, audio_url, duration_seconds, track_order, play_count, albums(title, cover_url)')
-            .in('album_id', albumIds)
-            .order('track_order', { ascending: true });
-
-          if (tracksData && tracksData.length > 0) {
-            const albumYearMap = new Map(recentAlbums.map((a) => [a.id, a.release_year]));
-            const sorted = [...tracksData].sort((a: any, b: any) => {
-              const yearA = albumYearMap.get(a.album_id) || 0;
-              const yearB = albumYearMap.get(b.album_id) || 0;
-              if (yearB !== yearA) return yearB - yearA;
-              return (a.track_order || 1) - (b.track_order || 1);
-            });
-            const mapped: Track[] = (sorted as unknown as TrackDB[]).map((t) => ({
-              id: t.id,
-              album_id: t.album_id,
-              title: t.title,
-              audio_url: t.audio_url,
-              duration_seconds: t.duration_seconds,
-              track_order: t.track_order,
-              album_title: t.albums?.title || '',
-              cover_url: t.albums?.cover_url || undefined,
-            }));
-            setPopularTracks(mapped);
-            setStorePopularTracks(mapped);
-          }
+        if (!popularError && popularData) {
+          const mapped: Track[] = (popularData as any[]).map((t) => ({
+            id: t.id,
+            album_id: t.album_id,
+            title: t.title,
+            audio_url: t.audio_url,
+            duration_seconds: t.duration_seconds,
+            track_order: t.track_order,
+            album_title: t.album_title || '',
+            cover_url: t.cover_url || undefined,
+          }));
+          setPopularTracks(mapped);
+          setStorePopularTracks(mapped);
         }
 
         // 2. Últimos 5 álbumes
@@ -165,6 +164,30 @@ export default function HomePage() {
         if (profileData) {
           setArtistBio((profileData as ArtistProfileDB).short_bio || 'Músico · Compositor · Artista');
           setSocialLinks((profileData as ArtistProfileDB).social_links || {});
+        }
+
+        // 5. Álbumes multimedia (galerías) - últimos 4
+        const { data: mediaData } = await supabase
+          .from('media_albums')
+          .select('id, title, slug, description, cover_image_url')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        if (mediaData && mediaData.length > 0) {
+          setMediaAlbums(mediaData as MediaAlbumDB[]);
+        }
+
+        // 6. Playlists oficiales - primeras 3
+        const { data: playlistsData } = await supabase
+          .from('playlists')
+          .select('id, title, description, cover_url, is_official')
+          .eq('is_official', true)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (playlistsData && playlistsData.length > 0) {
+          setPlaylists(playlistsData as PlaylistDB[]);
         }
 
       } catch (err) {
@@ -254,10 +277,14 @@ export default function HomePage() {
       {/* ═══ BARRA DE ACCIONES (solo desktop) ═══ */}
       {!isMobile && (
         <div className="artist-actions">
-          <button onClick={handlePlayAll} className="artist-play-btn" aria-label="Reproducir todo">
-            <Play className="h-6 w-6" fill="currentColor" />
+          <button onClick={togglePlay} className="artist-play-btn" aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
+            {isPlaying ? (
+              <Pause className="h-6 w-6" fill="currentColor" />
+            ) : (
+              <Play className="h-6 w-6" fill="currentColor" />
+            )}
           </button>
-          <button className="artist-shuffle-btn" aria-label="Aleatorio">
+          <button onClick={toggleShuffle} className={`artist-shuffle-btn ${isShuffle ? 'text-primary' : ''}`} aria-label="Aleatorio">
             <Shuffle className="h-5 w-5" />
           </button>
           <button className="artist-follow-btn">
@@ -414,19 +441,85 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* ═══ MULTIMEDIA ═══ */}
+      {mediaAlbums.length > 0 && (
+        <section className="artist-section">
+          <div className="home-section-header">
+            <h2 className="artist-section-title">Multimedia</h2>
+            <Link href="/galeria" className="home-section-link">Mostrar todo</Link>
+          </div>
+
+          <div className="home-cards-row">
+            {mediaAlbums.map((album) => (
+              <Link key={album.id} href={`/galeria/${album.slug}`} className="album-card">
+                <div className="album-card-cover">
+                  {album.cover_image_url ? (
+                    <img src={getR2Url(album.cover_image_url)} alt={album.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+                      {album.title.toLowerCase().includes('video') || album.title.toLowerCase().includes('vídeo') ? (
+                        <Video className="h-10 w-10 text-muted-foreground/40" />
+                      ) : (
+                        <Image className="h-10 w-10 text-muted-foreground/40" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                <h3 className="album-card-title">{album.title}</h3>
+                <p className="album-card-subtitle">
+                  {album.description || 'Galería de fotos'}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ PLAYLISTS OFICIALES ═══ */}
+      {playlists.length > 0 && (
+        <section className="artist-section">
+          <div className="home-section-header">
+            <h2 className="artist-section-title">Playlists</h2>
+            <Link href="/musica" className="home-section-link">Mostrar todo</Link>
+          </div>
+
+          <div className="home-cards-row">
+            {playlists.map((pl) => (
+              <Link key={pl.id} href={`/musica?playlist=${pl.id}`} className="album-card">
+                <div className="album-card-cover">
+                  {pl.cover_url ? (
+                    <img src={getR2Url(pl.cover_url)} alt={pl.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <ListMusic className="h-10 w-10 text-muted-foreground/40" />
+                  )}
+                  <button className="album-card-play" aria-label={`Reproducir ${pl.title}`}>
+                    <Play className="h-5 w-5" fill="currentColor" />
+                  </button>
+                </div>
+                <h3 className="album-card-title">{pl.title}</h3>
+                <p className="album-card-subtitle">
+                  {pl.description || 'Playlist oficial'}
+                  {pl.is_official && <span className="ml-2 text-xs text-primary">✓ Oficial</span>}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ═══ ACCESO RÁPIDO ═══ */}
       <section className="artist-section">
         <h2 className="artist-section-title">Explorar</h2>
         <div className="home-quick-access">
           {[
-            { title: 'Proyectos', href: '/proyectos', color: 'var(--accent-blue)', icon: FolderOpen },
-            { title: 'Galería de Fotos', href: '/galeria', color: 'var(--accent-orange)', icon: Images },
-            { title: 'Biografía Completa', href: '/bio', color: 'var(--accent-pink)', icon: User },
+            { title: 'Proyectos', href: '/proyectos', colorClass: 'bg-accent-blue', icon: FolderOpen },
+            { title: 'Galería de Fotos', href: '/galeria', colorClass: 'bg-accent-orange', icon: Images },
+            { title: 'Biografía Completa', href: '/bio', colorClass: 'bg-accent-pink', icon: User },
           ].map((item, i) => {
             const Icon = item.icon;
             return (
               <Link key={i} href={item.href} className="quick-access-card">
-                <div className="quick-access-icon" style={{ background: item.color }}>
+                <div className={`quick-access-icon ${item.colorClass}`}>
                   <Icon className="h-5 w-5 text-white" />
                 </div>
                 <span className="quick-access-label">{item.title}</span>

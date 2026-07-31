@@ -110,10 +110,33 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 7. PLAYLISTS (usuarios + artista)
+CREATE TABLE IF NOT EXISTS playlists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID, -- NULL = playlist del artista / oficial
+  title TEXT NOT NULL,
+  description TEXT,
+  cover_url TEXT,
+  is_public BOOLEAN DEFAULT TRUE,
+  is_official BOOLEAN DEFAULT FALSE, -- true = creada por el artista/admin
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  playlist_id UUID REFERENCES playlists(id) ON DELETE CASCADE,
+  track_id UUID REFERENCES tracks(id) ON DELETE CASCADE,
+  position INTEGER DEFAULT 0,
+  added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(playlist_id, track_id)
+);
+
 -- ÍNDICES
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_play_count ON tracks(play_count DESC);
 CREATE INDEX IF NOT EXISTS idx_tracks_likes_count ON tracks(likes_count DESC);
+CREATE INDEX IF NOT EXISTS idx_tracks_created_at ON tracks(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_media_items_album ON media_items(media_album_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_albums_slug ON albums(slug);
@@ -121,13 +144,58 @@ CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
 CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
 CREATE INDEX IF NOT EXISTS idx_albums_project ON albums(project_id);
 CREATE INDEX IF NOT EXISTS idx_artist_documents_project ON artist_documents(project_id);
-
+CREATE INDEX IF NOT EXISTS idx_playlists_user ON playlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_playlists_official ON playlists(is_official) WHERE is_official = true;
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist ON playlist_tracks(playlist_id);
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_position ON playlist_tracks(playlist_id, position);
 -- FUNCIONES RPC ATÓMICAS (PLAYS & LIKES)
+
 CREATE OR REPLACE FUNCTION increment_track_play(target_track_id UUID)
 RETURNS VOID AS $$
 BEGIN
   UPDATE tracks
   SET play_count = play_count + 1
+  WHERE id = target_track_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC: Popular tracks (ordenado por play_count total)
+CREATE OR REPLACE FUNCTION get_popular_tracks(limit_count INT DEFAULT 10)
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_agg(t) INTO result
+  FROM (
+    SELECT 
+      tr.id,
+      tr.album_id,
+      tr.title,
+      tr.audio_url,
+      tr.duration_seconds,
+      tr.track_order,
+      tr.play_count,
+      tr.likes_count,
+      al.title as album_title,
+      al.cover_url,
+      pr.title as project_title,
+      pr.slug as project_slug
+    FROM tracks tr
+    LEFT JOIN albums al ON tr.album_id = al.id
+    LEFT JOIN projects pr ON al.project_id = pr.id
+    ORDER BY tr.play_count DESC, tr.likes_count DESC
+    LIMIT limit_count
+  ) t;
+
+  RETURN COALESCE(result, '[]'::json);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_track_like(target_track_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE tracks
+  SET likes_count = likes_count + 1
   WHERE id = target_track_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -251,6 +319,8 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_albums ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE playlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE playlist_tracks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Lectura pública artist_profile" ON artist_profile;
 CREATE POLICY "Lectura pública artist_profile" ON artist_profile FOR SELECT USING (true);
@@ -269,6 +339,14 @@ CREATE POLICY "Lectura pública media_items" ON media_items FOR SELECT USING (tr
 DROP POLICY IF EXISTS "Lectura pública events" ON events;
 CREATE POLICY "Lectura pública events" ON events FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Lectura pública playlists" ON playlists;
+CREATE POLICY "Lectura pública playlists" ON playlists FOR SELECT USING (is_public = true);
+
+DROP POLICY IF EXISTS "Lectura pública playlist_tracks" ON playlist_tracks;
+CREATE POLICY "Lectura pública playlist_tracks" ON playlist_tracks FOR SELECT USING (
+  EXISTS (SELECT 1 FROM playlists p WHERE p.id = playlist_tracks.playlist_id AND p.is_public = true)
+);
+
 DROP POLICY IF EXISTS "Admin total artist_profile" ON artist_profile;
 CREATE POLICY "Admin total artist_profile" ON artist_profile FOR ALL TO authenticated USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "Admin total artist_documents" ON artist_documents;
@@ -285,5 +363,11 @@ DROP POLICY IF EXISTS "Admin total media_items" ON media_items;
 CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "Admin total events" ON events;
 CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total playlists" ON playlists;
+CREATE POLICY "Admin total playlists" ON playlists FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin total playlist_tracks" ON playlist_tracks;
+CREATE POLICY "Admin total playlist_tracks" ON playlist_tracks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- FUNCIONES RPC ATÓMICAS (PLAYS & LIKES)
 
 

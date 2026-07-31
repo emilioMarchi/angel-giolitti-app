@@ -1,40 +1,114 @@
-## Estado Actual del Dev Server
+## Error Type
+Console Error
 
-### Diagnóstico Completo
+## Error Message
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
 
-#### 1. Error `--no-turbopack` — SOLUCIONADO
-- Causa: El flag `--no-turbopack` no existe en Next.js 16.2.11/12. Se eliminó del script `dev` en package.json.
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
 
-#### 2. Turbopack (`next dev`) — FUNCIONAL
-- **Error original:** `0xc0000142` (STATUS_DLL_INIT_FAILED) al spawnear proceso hijo para PostCSS
-- **Causa:** Node.js v24 + Windows: los child processes crashean al inicializar DLLs
-- **Solución:** Se agregó `turbopackPluginRuntimeStrategy: 'workerThreads'` en `next.config.ts` para usar worker_threads en lugar de child_processes para PostCSS
-- **Adicional:** Se eliminó archivo `nul` (nombre reservado de Windows) del proyecto que causaba error "FunciÃ³n incorrecta" en Turbopack
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
 
-#### 3. Webpack (`next dev --webpack`) — FUNCIONAL COMPLETAMENTE
-- **Error original:** "Jest worker encountered 2 child process exceptions, exceeding retry limit" en rutas `[slug]`
-- **Causa:** Node.js v24 + Windows: jest-worker spawn child processes que fallan al inicializar
-- **Solución:** Se agregó `workerThreads: true` y `cpus: 2` en `next.config.ts` para usar worker_threads en lugar de child_processes
+https://react.dev/link/hydration-mismatch
 
-### Configuración Aplicada (`next.config.ts`)
-```ts
-experimental: {
-  workerThreads: true,                    // Webpack: usa worker_threads en vez de child_process
-  turbopackPluginRuntimeStrategy: 'workerThreads',  // Turbopack: usa worker_threads para PostCSS
-  cpus: 2,                                // Limita workers paralelos
-}
-```
+  ...
+    <HTTPAccessFallbackErrorBoundary pathname="/" notFound={{...}} forbidden={undefined} unauthorized={undefined} ...>
+      <RedirectBoundary>
+        <RedirectErrorBoundary router={{...}}>
+          <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+            <SegmentViewNode type="page" pagePath="page.tsx">
+              <SegmentTrieNode>
+              <ClientPageRoot Component={function HomePage} serverProvidedParams={{...}}>
+                <HomePage params={Promise} searchParams={Promise}>
+                  <div className="artist-pro...">
+                    <header>
+                    <div>
+                    <section>
+                    <section>
+                    <section className="artist-sec...">
+                      <h2>
+                      <div className="home-quick...">
+                        <LinkComponent href="/proyectos" className="quick-acce...">
+                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
+                            <div
+                              className="quick-access-icon"
+                              style={{
++                               background: "var(--accent-blue)"
+-                               background-image: ""
+-                               background-position-x: ""
+-                               background-position-y: ""
+-                               background-size: ""
+-                               background-repeat: ""
+-                               background-attachment: ""
+-                               background-origin: ""
+-                               background-clip: ""
+-                               background-color: ""
+-                               --darkreader-inline-bg: "var(--darkreader-bg--accent-blue)"
+                              }}
+-                             data-darkreader-inline-bg=""
+                            >
+                            ...
+                        <LinkComponent href="/galeria" className="quick-acce...">
+                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
+                            <div
+                              className="quick-access-icon"
+                              style={{
++                               background: "var(--accent-orange)"
+-                               background-image: ""
+-                               background-position-x: ""
+-                               background-position-y: ""
+-                               background-size: ""
+-                               background-repeat: ""
+-                               background-attachment: ""
+-                               background-origin: ""
+-                               background-clip: ""
+-                               background-color: ""
+-                               --darkreader-inline-bg: "var(--darkreader-bg--accent-orange)"
+                              }}
+-                             data-darkreader-inline-bg=""
+                            >
+                            ...
+                        <LinkComponent href="/bio" className="quick-acce...">
+                          <a className="quick-acce..." ref={function} onClick={function onClick} ...>
+                            <div
+                              className="quick-access-icon"
+                              style={{
++                               background: "var(--accent-pink)"
+-                               background-image: ""
+-                               background-position-x: ""
+-                               background-position-y: ""
+-                               background-size: ""
+-                               background-repeat: ""
+-                               background-attachment: ""
+-                               background-origin: ""
+-                               background-clip: ""
+-                               background-color: ""
+-                               --darkreader-inline-bg: "var(--darkreader-bg--accent-pink)"
+                              }}
+-                             data-darkreader-inline-bg=""
+                            >
+                            ...
+                    ...
+            ...
+          ...
 
-### Scripts Recomendados
 
-```bash
-# Desarrollo con Turbopack (recomendado)
-npm run dev
 
-# Fallback: Webpack (si Turbopack tiene problemas)
-npm run dev:webpack
+    at div (<anonymous>:null:null)
+    at <unknown> (src/app/page.tsx:522:17)
+    at Array.map (<anonymous>:null:null)
+    at HomePage (src/app/page.tsx:518:13)
 
-# Producción
-npm run build
-npm run start
-```
+## Code Frame
+  520 |             return (
+  521 |               <Link key={i} href={item.href} className="quick-access-card">
+> 522 |                 <div className="quick-access-icon" style={{ background: item.color }}>
+      |                 ^
+  523 |                   <Icon className="h-5 w-5 text-white" />
+  524 |                 </div>
+  525 |                 <span className="quick-access-label">{item.title}</span>
+
+Next.js version: 16.2.12 (Turbopack)

@@ -18,13 +18,14 @@ interface PlayerState {
   isPlaying: boolean;
   queue: Track[];
   currentIndex: number;
-  volume: number; // 0 a 1
+  volume: number;
   isMuted: boolean;
-  progress: number; // segundos
-  duration: number; // segundos
+  progress: number;
+  duration: number;
   popularTracks: Track[];
   likedTrackIds: string[];
   isFollowing: boolean;
+  isShuffle: boolean;
   
   // Acciones
   playTrack: (track: Track, newQueue?: Track[]) => void;
@@ -43,6 +44,7 @@ interface PlayerState {
   setPopularTracks: (tracks: Track[]) => void;
   toggleLike: (trackId: string) => void;
   toggleFollow: () => void;
+  toggleShuffle: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -59,6 +61,7 @@ export const usePlayerStore = create<PlayerState>()(
       popularTracks: [],
       likedTrackIds: [],
       isFollowing: false,
+      isShuffle: false,
 
       playTrack: (track, newQueue) => {
         let activeQueue = get().queue;
@@ -95,27 +98,53 @@ export const usePlayerStore = create<PlayerState>()(
       setPlaying: (isPlaying) => set({ isPlaying }),
 
       nextTrack: () => {
-        const { queue, currentIndex } = get();
-        if (currentIndex < queue.length - 1) {
-          const nextIndex = currentIndex + 1;
-          set({
-            currentIndex: nextIndex,
-            currentTrack: queue[nextIndex],
-            progress: 0,
-            isPlaying: true,
-          });
+        const { queue, currentIndex, isShuffle } = get();
+        if (queue.length === 0) return;
+
+        let nextIndex: number;
+        if (isShuffle) {
+          // Shuffle: pick random index different from current
+          const availableIndices = queue.map((_, i) => i).filter((i) => i !== currentIndex);
+          if (availableIndices.length === 0) return;
+          nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        } else {
+          // Sequential
+          if (currentIndex >= queue.length - 1) return;
+          nextIndex = currentIndex + 1;
         }
+
+        set({
+          currentIndex: nextIndex,
+          currentTrack: queue[nextIndex],
+          progress: 0,
+          isPlaying: true,
+        });
       },
 
       previousTrack: () => {
-        const { queue, currentIndex, progress } = get();
+        const { queue, currentIndex, progress, isShuffle } = get();
+        if (queue.length === 0) return;
+
         // Si el tema lleva más de 3 segundos, lo reiniciamos
         if (progress > 3) {
           set({ progress: 0 });
           return;
         }
 
-        if (currentIndex > 0) {
+        if (isShuffle) {
+          // Shuffle: pick random index different from current
+          const availableIndices = queue.map((_, i) => i).filter((i) => i !== currentIndex);
+          if (availableIndices.length === 0) return;
+          const prevIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          set({
+            currentIndex: prevIndex,
+            currentTrack: queue[prevIndex],
+            progress: 0,
+            isPlaying: true,
+          });
+        } else {
+          // Sequential
+          if (currentIndex <= 0) return;
           const prevIndex = currentIndex - 1;
           set({
             currentIndex: prevIndex,
@@ -175,6 +204,8 @@ export const usePlayerStore = create<PlayerState>()(
           incrementFollow();
         }
       },
+
+      toggleShuffle: () => set((state) => ({ isShuffle: !state.isShuffle })),
     }),
     {
       name: 'angel-giolitti-player-storage',
@@ -183,6 +214,7 @@ export const usePlayerStore = create<PlayerState>()(
         isMuted: state.isMuted,
         likedTrackIds: state.likedTrackIds,
         isFollowing: state.isFollowing,
+        isShuffle: state.isShuffle,
       }),
     }
   )

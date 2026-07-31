@@ -43,6 +43,7 @@ export default function GlobalAudioPlayer() {
     queue,
     currentIndex,
     likedTrackIds,
+    isShuffle,
     togglePlay,
     nextTrack,
     previousTrack,
@@ -51,6 +52,7 @@ export default function GlobalAudioPlayer() {
     setProgress,
     setDuration,
     toggleLike,
+    toggleShuffle,
   } = usePlayerStore();
 
   // Tema por defecto al cargar el sitio
@@ -281,8 +283,10 @@ export default function GlobalAudioPlayer() {
           {/* Botones de control */}
           <div className="player-controls-buttons">
             <button
-              className="player-control-btn"
+              onClick={toggleShuffle}
+              className={`player-control-btn ${isShuffle ? 'text-primary' : ''}`}
               aria-label="Aleatorio"
+              aria-pressed={isShuffle}
             >
               <Shuffle className="h-4 w-4" />
             </button>

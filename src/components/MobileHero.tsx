@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User } from '@/lib/lucide';
+import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Menu, X } from '@/lib/lucide';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { usePlayerStore } from '@/store/usePlayerStore';
-import { incrementFollow, decrementFollow } from '@/lib/metrics';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
+
 
 const heroImages = [
   getR2Url('images/gallery/handangel/photo-0.webp'),
@@ -16,16 +17,26 @@ const heroImages = [
   getR2Url('images/gallery/handangel/photo-6.webp'),
 ];
 
+const navItems = [
+  { href: '/musica', icon: Music2, label: 'Música' },
+  { href: '/proyectos', icon: FolderOpen, label: 'Proyectos' },
+  { href: '/eventos', icon: CalendarDays, label: 'Eventos' },
+  { href: '/galeria', icon: Images, label: 'Galería' },
+  { href: '/bio', icon: User, label: 'Bio' },
+];
+
 export default function MobileHero() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [artistBio, setArtistBio] = useState('Músico · Compositor · Artista');
-  const [followersCount, setFollowersCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const pathname = usePathname();
-  const playQueue = usePlayerStore((state) => state.playQueue);
-  const popularTracks = usePlayerStore((state) => state.popularTracks);
   const isFollowing = usePlayerStore((state) => state.isFollowing);
   const toggleFollow = usePlayerStore((state) => state.toggleFollow);
+  const { results, loading } = useGlobalSearch(searchTerm);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -50,7 +61,6 @@ export default function MobileHero() {
       .then(({ data }) => {
         if (data) {
           setArtistBio((data as { short_bio: string }).short_bio || 'Músico · Compositor · Artista');
-          setFollowersCount((data as { followers_count: number }).followers_count || 0);
         }
       });
   }, []);
@@ -58,6 +68,10 @@ export default function MobileHero() {
   useEffect(() => {
     setHeroIndex((prev) => (prev >= heroImages.length ? 0 : prev));
   }, [heroImages.length]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   if (!isMobile) return null;
 
@@ -121,35 +135,195 @@ export default function MobileHero() {
         </div>
       </header>
 
-      <div className="sticky top-0 z-40 flex items-center px-3 py-2.5 bg-[var(--sidebar)]/95 backdrop-blur-md">
-        <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {[
-            { href: '/', icon: Home, label: 'Inicio' },
-            { href: '/buscar', icon: Search, label: 'Buscar' },
-            { href: '/musica', icon: Music2, label: 'Música' },
-            { href: '/proyectos', icon: FolderOpen, label: 'Proyectos' },
-            { href: '/eventos', icon: CalendarDays, label: 'Eventos' },
-            { href: '/galeria', icon: Images, label: 'Galería' },
-            { href: '/bio', icon: User, label: 'Bio' },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-[58px] ${
-                  isActive(item.href)
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="text-[10px] font-medium leading-tight">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      <nav className="sticky top-0 z-50 bg-[var(--sidebar)]/95 backdrop-blur-md border-b border-white/5">
+        <div className="flex items-center justify-between px-3 py-2">
+          <Link
+            href="/"
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              isActive('/')
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'
+            }`}
+            onClick={() => { setIsMenuOpen(false); setIsSearchOpen(false); }}
+          >
+            <Home className="h-5 w-5" />
+          </Link>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setIsSearchOpen(!isSearchOpen); setIsMenuOpen(false); }}
+              className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+              aria-label={isSearchOpen ? 'Cerrar búsqueda' : 'Buscar'}
+              aria-expanded={isSearchOpen}
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => { setIsMenuOpen(!isMenuOpen); setIsSearchOpen(false); }}
+              className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+              aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={isMenuOpen}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+
+        {isSearchOpen && (
+          <div className="px-3 pb-3 bg-[var(--sidebar)]/95 backdrop-blur-md border-b border-white/5 animate-fade-in">
+            <div className="relative">
+              <div className="relative flex items-center bg-muted/20 border border-white/5 rounded-xl overflow-hidden">
+                <div className="pl-4 text-muted-foreground">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Buscar canciones, álbumes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => { }}
+                  className="w-full bg-transparent border-0 px-3 py-2.5 text-white placeholder-muted-foreground focus:outline-none focus:ring-0 text-sm"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="pr-4 text-muted-foreground hover:text-white transition-colors"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {loading && (
+                  <div className="pr-4">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+              {searchTerm && (
+                <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-background border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-fade-in max-h-[50vh] overflow-y-auto">
+                  <div className="px-4 py-4">
+                    {results.tracks.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Music2 className="w-3.5 h-3.5" /> Canciones
+                        </h3>
+                        <div className="space-y-1">
+                          {results.tracks.slice(0, 5).map((track) => (
+                            <Link
+                              key={track.id}
+                              href={`/musica?track=${track.id}`}
+                              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
+                              onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
+                            >
+                              <div className="w-8 h-8 rounded bg-neutral-900 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                {track.cover_url ? (
+                                  <img src={getR2Url(track.cover_url)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Music2 className="w-3 h-3 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate text-white">{track.title}</p>
+                                <p className="text-xs text-muted-foreground truncate">{track.album_title}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {results.albums.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <FolderOpen className="w-3.5 h-3.5" /> Álbumes
+                        </h3>
+                        <div className="space-y-1">
+                          {results.albums.slice(0, 3).map((album) => (
+                            <Link
+                              key={album.id}
+                              href={`/musica?album=${album.slug}`}
+                              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
+                              onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
+                            >
+                              <div className="w-8 h-8 rounded bg-neutral-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                <FolderOpen className="w-3 h-3 text-muted-foreground" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{album.title}</p>
+                                <p className="text-xs text-muted-foreground">{album.release_year}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {results.projects.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Music2 className="w-3.5 h-3.5" /> Proyectos
+                        </h3>
+                        <div className="space-y-1">
+                          {results.projects.slice(0, 3).map((project) => (
+                            <Link
+                              key={project.id}
+                              href={`/proyectos/${project.slug}`}
+                              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/20 transition"
+                              onClick={() => { setIsSearchOpen(false); setSearchTerm(''); }}
+                            >
+                              <div className="w-8 h-8 rounded bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                                <Music2 className="w-3.5 h-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{project.title}</p>
+                                <p className="text-xs text-muted-foreground">{project.category}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {results.tracks.length === 0 && results.albums.length === 0 && results.projects.length === 0 && !loading && searchTerm.length >= 2 && (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        No se encontraron resultados para "{searchTerm}"
+                      </p>
+                    )}
+                    {searchTerm.length < 2 && !loading && (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        Escribe al menos 2 caracteres para buscar
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isMenuOpen && (
+          <div className="px-3 pb-3">
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[58px] ${
+                      isActive(item.href)
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
     </>
   );
 }

@@ -17,7 +17,6 @@ import {
 
 const mainNav = [
   { label: 'Inicio', href: '/', icon: Home },
-  { label: 'Buscar', href: '/buscar', icon: Search },
 ];
 
 const libraryNav = [
