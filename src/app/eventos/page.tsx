@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon, MessageCircle, Phone } from '@/lib/lucide';
+import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon, MessageCircle } from '@/lib/lucide';
+import { WhatsAppIcon } from '@/components/BrandIcons';
 
 interface EventData {
   id: string;
@@ -210,7 +211,7 @@ export default function EventosPage() {
                 className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 text-white font-bold text-sm hover:bg-green-500 transition-colors"
                 aria-label={`Compartir evento ${selectedEvent.title} por WhatsApp`}
               >
-                <Phone className="h-4 w-4" />
+                <WhatsAppIcon className="h-4 w-4" />
                 <span>WhatsApp</span>
               </a>
             </div>
@@ -295,7 +296,7 @@ export default function EventosPage() {
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Compartir evento ${event.title} por WhatsApp`}
                   >
-                    <Phone className="h-3.5 w-3.5" />
+                    <WhatsAppIcon className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">WhatsApp</span>
                   </a>
                 </div>

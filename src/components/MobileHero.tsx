@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Menu, X, Share2, MessageCircle, MessageSquare, Video, Music } from '@/lib/lucide';
+import { CheckCircle2, Users, Home, Search, Music2, FolderOpen, CalendarDays, Images, User, Menu, X, Share2, MessageCircle, MessageSquare } from '@/lib/lucide';
 import { getR2Url } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
+import { InstagramIcon, YoutubeIcon, SpotifyIcon, FacebookIcon, TwitterIcon } from '@/components/BrandIcons';
 
 
 const heroImages = [
@@ -181,22 +182,34 @@ export default function MobileHero() {
                     <MessageSquare className="h-4 w-4" />
                     Copiar enlace
                   </button>
-                  {socialLinks.instagram && (
-                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
-                      <MessageSquare className="h-4 w-4" />
-                      Instagram
+                  {socialLinks.spotify && (
+                    <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <SpotifyIcon className="h-4 w-4" />
+                      Spotify
+                    </a>
+                  )}
+                  {socialLinks.twitter && (
+                    <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <TwitterIcon className="h-4 w-4" />
+                      Twitter
                     </a>
                   )}
                   {socialLinks.youtube && (
                     <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
-                      <Video className="h-4 w-4" />
+                      <YoutubeIcon className="h-4 w-4" />
                       YouTube
                     </a>
                   )}
-                  {socialLinks.spotify && (
-                    <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
-                      <Music className="h-4 w-4" />
-                      Spotify
+                  {socialLinks.facebook && (
+                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <FacebookIcon className="h-4 w-4" />
+                      Facebook
+                    </a>
+                  )}
+                  {socialLinks.instagram && (
+                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 w-full text-left" onClick={() => setShareOpen(false)}>
+                      <InstagramIcon className="h-4 w-4" />
+                      Instagram
                     </a>
                   )}
                 </div>

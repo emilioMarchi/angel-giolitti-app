@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Play, Pause, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Music, Share2, MessageCircle, Image, ListMusic, ChevronUp, ChevronDown } from '@/lib/lucide';
+import { Play, Pause, Shuffle, Heart, Disc3, CalendarDays, FolderOpen, Images, User, Headphones, CheckCircle2, Users, MessageSquare, Video, Share2, MessageCircle, Image, ListMusic, ChevronUp, ChevronDown } from '@/lib/lucide';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
+import { InstagramIcon, YoutubeIcon, SpotifyIcon, FacebookIcon, TwitterIcon } from '@/components/BrandIcons';
 
 /* ── Interfaces para las queries ── */
 interface AlbumDB {
@@ -292,19 +293,29 @@ export default function HomePage() {
             Seguir
           </button>
           <div className="flex items-center gap-1.5 ml-3">
-            {socialLinks.instagram && (
-              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-[rgb(var(--instagram))] hover:bg-[rgb(var(--instagram))/10] transition-colors" aria-label="Instagram">
-                <MessageSquare className="h-4.5 w-4.5" />
+            {socialLinks.spotify && (
+              <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-green-500 hover:bg-green-500/10 transition-colors" aria-label="Spotify">
+                <SpotifyIcon className="h-[18px] w-[18px]" />
+              </a>
+            )}
+            {socialLinks.twitter && (
+              <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-sky-500 hover:bg-sky-500/10 transition-colors" aria-label="Twitter">
+                <TwitterIcon className="h-[18px] w-[18px]" />
               </a>
             )}
             {socialLinks.youtube && (
               <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors" aria-label="YouTube">
-                <Video className="h-4.5 w-4.5" />
+                <YoutubeIcon className="h-[18px] w-[18px]" />
               </a>
             )}
-            {socialLinks.spotify && (
-              <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-green-500 hover:bg-green-500/10 transition-colors" aria-label="Spotify">
-                <Music className="h-4.5 w-4.5" />
+            {socialLinks.facebook && (
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-blue-600/10 transition-colors" aria-label="Facebook">
+                <FacebookIcon className="h-[18px] w-[18px]" />
+              </a>
+            )}
+            {socialLinks.instagram && (
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-[rgb(var(--instagram))] hover:bg-[rgb(var(--instagram))/10] transition-colors" aria-label="Instagram">
+                <InstagramIcon className="h-[18px] w-[18px]" />
               </a>
             )}
           </div>
@@ -572,22 +583,34 @@ export default function HomePage() {
       <section className="artist-section">
         <h2 className="artist-section-title">Conectar</h2>
         <div className="flex flex-wrap gap-3">
-          {socialLinks.instagram && (
-            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
-              <MessageSquare className="h-4 w-4" />
-              <span>Instagram</span>
+          {socialLinks.spotify && (
+            <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <SpotifyIcon />
+              <span>Spotify</span>
+            </a>
+          )}
+          {socialLinks.twitter && (
+            <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <TwitterIcon />
+              <span>Twitter</span>
             </a>
           )}
           {socialLinks.youtube && (
             <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
-              <Video className="h-4 w-4" />
+              <YoutubeIcon />
               <span>YouTube</span>
             </a>
           )}
-          {socialLinks.spotify && (
-            <a href={socialLinks.spotify} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
-              <Music className="h-4 w-4" />
-              <span>Spotify</span>
+          {socialLinks.facebook && (
+            <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <FacebookIcon />
+              <span>Facebook</span>
+            </a>
+          )}
+          {socialLinks.instagram && (
+            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-sm text-white/80 hover:text-white transition-colors">
+              <InstagramIcon />
+              <span>Instagram</span>
             </a>
           )}
         </div>

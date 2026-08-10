@@ -5,10 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   User, 
   MapPin, 
-  MessageSquare, 
-  Send, 
   Music, 
-  Globe, 
   FileText, 
   Download, 
   Calendar, 
@@ -22,6 +19,7 @@ import {
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
+import { InstagramIcon, YoutubeIcon, SpotifyIcon, SoundCloudIcon, TwitterIcon, FacebookIcon } from '@/components/BrandIcons';
 
 interface ArtistProfile {
   id: string;
@@ -37,6 +35,7 @@ interface ArtistProfile {
   twitter: string;
   youtube: string;
   spotify: string;
+  facebook: string;
   soundcloud: string;
   bandcamp: string;
   dossier_pdf_url: string;
@@ -76,6 +75,7 @@ Su discografía incluye los álbumes *«Horizonte Infinito»* (2025), *«Ciudad 
   twitter: 'https://twitter.com/angelgiolitti',
   youtube: 'https://youtube.com/@angelgiolitti',
   spotify: 'https://open.spotify.com/artist/angelgiolitti',
+  facebook: '',
   soundcloud: 'https://soundcloud.com/angelgiolitti',
   bandcamp: 'https://angelgiolitti.bandcamp.com',
   dossier_pdf_url: '',
@@ -115,6 +115,7 @@ export default function BioPage() {
             twitter: dbProfile.social_links?.twitter || '',
             youtube: dbProfile.social_links?.youtube || '',
             spotify: dbProfile.social_links?.spotify || '',
+            facebook: dbProfile.social_links?.facebook || '',
             soundcloud: dbProfile.social_links?.soundcloud || '',
             bandcamp: dbProfile.social_links?.bandcamp || '',
             dossier_pdf_url: '',
@@ -191,10 +192,12 @@ export default function BioPage() {
   }
 
   const socialLinks = [
-    { label: 'Instagram', href: profile.instagram, Icon: MessageSquare },
-    { label: 'YouTube', href: profile.youtube, Icon: Send },
-    { label: 'Spotify', href: profile.spotify, Icon: Music },
-    { label: 'SoundCloud', href: profile.soundcloud, Icon: Globe },
+    { label: 'Spotify', href: profile.spotify, Icon: SpotifyIcon },
+    { label: 'Twitter', href: profile.twitter, Icon: TwitterIcon },
+    { label: 'YouTube', href: profile.youtube, Icon: YoutubeIcon },
+    { label: 'Facebook', href: profile.facebook, Icon: FacebookIcon },
+    { label: 'Instagram', href: profile.instagram, Icon: InstagramIcon },
+    { label: 'SoundCloud', href: profile.soundcloud, Icon: SoundCloudIcon },
   ].filter(s => s.href);
 
   return (
