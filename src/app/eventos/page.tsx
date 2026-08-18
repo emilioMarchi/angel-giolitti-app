@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon, MessageCircle } from '@/lib/lucide';
+import { Calendar, MapPin, Ticket, Clock, ExternalLink, ArrowLeft, Image as ImageIcon, MessageCircle, X } from '@/lib/lucide';
 import { WhatsAppIcon } from '@/components/BrandIcons';
 
 interface EventData {
@@ -25,6 +25,7 @@ export default function EventosPage() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [flyerPreview, setFlyerPreview] = useState(false);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -93,13 +94,20 @@ export default function EventosPage() {
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
           {/* Flyer gigante (estilo portada de álbum) */}
-          <div className="w-full md:w-80 aspect-[4/5] rounded-md bg-muted shadow-2xl flex-shrink-0 flex items-center justify-center relative overflow-hidden group border border-white/5">
+          <div className="w-full md:w-80 flex-shrink-0 relative">
             {selectedEvent.flyer_image_url ? (
-              <img src={selectedEvent.flyer_image_url} alt={`Flyer de ${selectedEvent.title}`} className="w-full h-full object-cover" />
+              <img
+                src={selectedEvent.flyer_image_url}
+                alt={`Flyer de ${selectedEvent.title}`}
+                onClick={() => setFlyerPreview(true)}
+                className="w-full h-auto rounded-md bg-muted shadow-2xl border border-white/5 cursor-zoom-in"
+              />
             ) : (
-              <div className="flex flex-col items-center justify-center text-muted-foreground/30">
-                <ImageIcon className="h-16 w-16 mb-2" />
-                <span className="text-xs uppercase font-bold tracking-widest">Sin Flyer Oficial</span>
+              <div className="aspect-[4/5] rounded-md bg-muted shadow-2xl flex items-center justify-center relative overflow-hidden border border-white/5">
+                <div className="flex flex-col items-center justify-center text-muted-foreground/30">
+                  <ImageIcon className="h-16 w-16 mb-2" />
+                  <span className="text-xs uppercase font-bold tracking-widest">Sin Flyer Oficial</span>
+                </div>
               </div>
             )}
             
@@ -198,6 +206,28 @@ export default function EventosPage() {
             </div>
           </div>
         </div>
+
+        {/* Lightbox del flyer */}
+        {flyerPreview && selectedEvent.flyer_image_url && (
+          <div
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setFlyerPreview(false)}
+          >
+            <button
+              onClick={() => setFlyerPreview(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              aria-label="Cerrar vista del flyer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={selectedEvent.flyer_image_url}
+              alt={`Flyer de ${selectedEvent.title}`}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-full object-contain rounded-md shadow-2xl"
+            />
+          </div>
+        )}
       </div>
     );
   }
