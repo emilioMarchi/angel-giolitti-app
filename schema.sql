@@ -79,7 +79,6 @@ CREATE TABLE IF NOT EXISTS media_albums (
   slug TEXT UNIQUE,
   description TEXT,
   cover_image_url TEXT,
-  album_id UUID REFERENCES albums(id) ON DELETE SET NULL,
   project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -105,6 +104,7 @@ CREATE TABLE IF NOT EXISTS events (
   event_date TIMESTAMP WITH TIME ZONE NOT NULL,
   flyer_image_url TEXT,
   ticket_url TEXT,
+  ticket_price NUMERIC(10,2), -- Precio de entrada en pesos argentinos
   is_featured BOOLEAN DEFAULT FALSE,
   status TEXT CHECK (status IN ('upcoming', 'completed')) DEFAULT 'upcoming',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -130,6 +130,14 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
   position INTEGER DEFAULT 0,
   added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(playlist_id, track_id)
+);
+
+-- 8. MÓDULO MÉTRICAS Y ESTADÍSTICAS (VISTAS DE PÁGINAS)
+CREATE TABLE IF NOT EXISTS page_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  path TEXT UNIQUE NOT NULL,
+  views_count INTEGER DEFAULT 0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ÍNDICES
@@ -245,6 +253,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION increment_page_view(target_path TEXT)
+RETURNS VOID AS $$
+BEGIN
+  INSERT INTO page_views (path, views_count)
+  VALUES (target_path, 1)
+  ON CONFLICT (path)
+  DO UPDATE SET 
+    views_count = page_views.views_count + 1,
+    updated_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
 CREATE OR REPLACE FUNCTION get_artist_metrics()
 RETURNS JSON AS $$
 DECLARE
@@ -321,6 +342,7 @@ ALTER TABLE media_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE playlists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE playlist_tracks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE page_views ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Lectura pública artist_profile" ON artist_profile;
 CREATE POLICY "Lectura pública artist_profile" ON artist_profile FOR SELECT USING (true);
@@ -338,6 +360,8 @@ DROP POLICY IF EXISTS "Lectura pública media_items" ON media_items;
 CREATE POLICY "Lectura pública media_items" ON media_items FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Lectura pública events" ON events;
 CREATE POLICY "Lectura pública events" ON events FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Lectura pública page_views" ON page_views;
+CREATE POLICY "Lectura pública page_views" ON page_views FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Lectura pública playlists" ON playlists;
 CREATE POLICY "Lectura pública playlists" ON playlists FOR SELECT USING (is_public = true);
@@ -348,25 +372,28 @@ CREATE POLICY "Lectura pública playlist_tracks" ON playlist_tracks FOR SELECT U
 );
 
 DROP POLICY IF EXISTS "Admin total artist_profile" ON artist_profile;
-CREATE POLICY "Admin total artist_profile" ON artist_profile FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total artist_profile" ON artist_profile FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total artist_documents" ON artist_documents;
-CREATE POLICY "Admin total artist_documents" ON artist_documents FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total artist_documents" ON artist_documents FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total albums" ON albums;
-CREATE POLICY "Admin total albums" ON albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total albums" ON albums FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total tracks" ON tracks;
-CREATE POLICY "Admin total tracks" ON tracks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total tracks" ON tracks FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total projects" ON projects;
-CREATE POLICY "Admin total projects" ON projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total projects" ON projects FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total media_albums" ON media_albums;
-CREATE POLICY "Admin total media_albums" ON media_albums FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total media_albums" ON media_albums FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total media_items" ON media_items;
-CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total media_items" ON media_items FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total events" ON events;
-CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total events" ON events FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total playlists" ON playlists;
-CREATE POLICY "Admin total playlists" ON playlists FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total playlists" ON playlists FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 DROP POLICY IF EXISTS "Admin total playlist_tracks" ON playlist_tracks;
-CREATE POLICY "Admin total playlist_tracks" ON playlist_tracks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin total playlist_tracks" ON playlist_tracks FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
+DROP POLICY IF EXISTS "Admin total page_views" ON page_views;
+CREATE POLICY "Admin total page_views" ON page_views FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
+
 
 -- FUNCIONES RPC ATÓMICAS (PLAYS & LIKES)
 

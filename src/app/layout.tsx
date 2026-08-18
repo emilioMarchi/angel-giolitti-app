@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
-import MobileHero from "@/components/MobileHero";
-import GlobalAudioPlayer from "@/components/GlobalAudioPlayer";
-import ScrollRestorer from "@/components/ScrollRestorer";
+import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -93,22 +89,10 @@ export default function RootLayout({
         <link rel="sitemap" href={`${siteUrl}/sitemap.xml`} />
         <link rel="robots" href={`${siteUrl}/robots.txt`} />
       </head>
-      <body className="spotify-layout">
-        {/* ── Sidebar lateral izquierda ── */}
-        <Sidebar />
-
-        {/* ── Contenido principal (TopBar + páginas) ── */}
-        <main className="main-view">
-          <TopBar />
-          <MobileHero />
-          <div className="main-view-content">
-            <ScrollRestorer />
-            {children}
-          </div>
-        </main>
-
-        {/* ── Reproductor fijo inferior ── */}
-        <GlobalAudioPlayer />
+      <body className="spotify-layout bg-[#0a0a0a] text-white">
+        <ClientLayoutWrapper>
+          {children}
+        </ClientLayoutWrapper>
       </body>
     </html>
   );

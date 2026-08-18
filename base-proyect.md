@@ -116,6 +116,7 @@ CREATE TABLE events (
   event_date TIMESTAMP WITH TIME ZONE NOT NULL,
   flyer_image_url TEXT,
   ticket_url TEXT, -- Enlace a venta de entradas / link de pago
+  ticket_price NUMERIC(10,2), -- Precio de entrada en pesos argentinos
   is_featured BOOLEAN DEFAULT FALSE,
   status TEXT CHECK (status IN ('upcoming', 'completed')) DEFAULT 'upcoming',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
