@@ -460,7 +460,7 @@ export default function HomePage() {
       {upcomingEvents.length > 0 && (
         <section className="artist-section">
           <div className="home-section-header">
-            <h2 className="artist-section-title">En Concierto</h2>
+            <h2 className="artist-section-title">Próximos eventos</h2>
             <Link href="/eventos" className="home-section-link">Mostrar todo</Link>
           </div>
 
@@ -468,7 +468,7 @@ export default function HomePage() {
             {upcomingEvents.map((event) => {
               const { day, month } = formatEventDate(event.event_date);
               return (
-                <Link key={event.id} href="/eventos" className="event-row">
+                <Link key={event.id} href={`/eventos?event=${event.id}`} className="event-row">
                   <div className="event-date-badge">
                     <span className="event-date-day">{day}</span>
                     <span className="event-date-month">{month}</span>

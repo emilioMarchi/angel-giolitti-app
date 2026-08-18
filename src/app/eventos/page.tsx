@@ -38,6 +38,12 @@ export default function EventosPage() {
 
         if (!error && data) {
           setEvents(data as EventData[]);
+          const params = new URLSearchParams(window.location.search);
+          const eventParam = params.get('event');
+          if (eventParam) {
+            const found = data.find((e: any) => e.id === eventParam || e.slug === eventParam);
+            if (found) setSelectedEvent(found as EventData);
+          }
         }
       } catch (err) {
         console.error('Error fetching events, using mocks:', err);
@@ -248,7 +254,7 @@ export default function EventosPage() {
 
       {/* Lista de Próximos Eventos */}
       <section className="mb-14">
-        <h2 className="text-xl font-bold text-white mb-6 border-b border-white/5 pb-2">Próximos Shows</h2>
+        <h2 className="text-xl font-bold text-white mb-6 border-b border-white/5 pb-2">Próximos eventos</h2>
         
         {upcomingEvents.length > 0 ? (
           <div className="flex flex-col gap-2">

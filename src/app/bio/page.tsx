@@ -355,7 +355,7 @@ export default function BioPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <Calendar className="h-6 w-6 text-primary" />
-              Próximas Presentaciones
+              Próximos eventos
             </h2>
             <a href="/eventos" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
               Ver agenda <ExternalLink className="h-3 w-3" />
@@ -365,9 +365,7 @@ export default function BioPage() {
             {events.map((event) => (
               <a
                 key={event.id}
-                href={event.ticket_url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/eventos?event=${event.id}`}
                 className="group flex items-center gap-4 p-4 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
               >
                 <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex flex-col items-center justify-center text-center flex-shrink-0">
@@ -382,7 +380,7 @@ export default function BioPage() {
                 </div>
                 {event.ticket_url ? (
                   <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
-                    Entradas
+                    Ver detalles
                   </span>
                 ) : (
                   <span className="px-4 py-2 rounded-full border border-transparent text-muted-foreground text-sm font-bold">
