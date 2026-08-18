@@ -15,55 +15,13 @@ interface EventData {
   event_date: string; // ISO String timestamp
   flyer_image_url: string;
   ticket_url: string;
+  ticket_price: number | null;
   is_featured: boolean;
   status: 'upcoming' | 'completed';
 }
 
-// Datos Mock (Fallback en caso de que la DB esté vacía)
-const mockEvents: EventData[] = [
-  {
-    id: 'e-1',
-    title: 'Ángel Giolitti Live Set - Presentación "Horizonte Infinito"',
-    slug: 'angel-giolitti-live-set-horizonte-infinito',
-    location_name: 'Niceto Club',
-    address_city: 'Buenos Aires, Argentina',
-    google_maps_url: 'https://maps.google.com/?q=Niceto+Club',
-    event_date: '2026-11-15T23:30:00Z',
-    flyer_image_url: '',
-    ticket_url: 'https://passline.com',
-    is_featured: true,
-    status: 'upcoming'
-  },
-  {
-    id: 'e-2',
-    title: 'Festival Mutek (Edición Sur)',
-    slug: 'festival-mutek-sur',
-    location_name: 'Centro Cultural San Martín',
-    address_city: 'Buenos Aires, Argentina',
-    google_maps_url: 'https://maps.google.com/?q=Centro+Cultural+San+Martin',
-    event_date: '2026-12-05T19:00:00Z',
-    flyer_image_url: '',
-    ticket_url: 'https://ticketek.com.ar',
-    is_featured: false,
-    status: 'upcoming'
-  },
-  {
-    id: 'e-3',
-    title: 'Secret Session - Modular Nights',
-    slug: 'secret-session-modular-nights',
-    location_name: 'Deseo',
-    address_city: 'Buenos Aires, Argentina',
-    google_maps_url: 'https://maps.google.com/?q=Deseo+BA',
-    event_date: '2026-03-10T23:59:00Z',
-    flyer_image_url: '',
-    ticket_url: '',
-    is_featured: false,
-    status: 'completed'
-  }
-];
-
 export default function EventosPage() {
-  const [events, setEvents] = useState<EventData[]>(mockEvents);
+  const [events, setEvents] = useState<EventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,7 +34,7 @@ export default function EventosPage() {
           .select('*')
           .order('event_date', { ascending: true }); // Orden ascendente para próximos
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           setEvents(data as EventData[]);
         }
       } catch (err) {
@@ -110,6 +68,11 @@ export default function EventosPage() {
       minute: '2-digit', 
       hour12: false 
     });
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (price == null) return null;
+    return price.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: price % 1 === 0 ? 0 : 2 });
   };
 
   const upcomingEvents = events.filter(e => e.status === 'upcoming');
@@ -183,6 +146,11 @@ export default function EventosPage() {
 
             {/* Acciones */}
             <div className="flex items-center gap-4 mt-10 flex-wrap">
+              {formatPrice(selectedEvent.ticket_price) && (
+                <span className="px-6 py-3 rounded-full bg-white/5 border border-primary/30 text-primary font-bold text-sm">
+                  Entrada: {formatPrice(selectedEvent.ticket_price)}
+                </span>
+              )}
               {!isPast && selectedEvent.ticket_url ? (
                 <a 
                   href={selectedEvent.ticket_url} 
@@ -270,7 +238,13 @@ export default function EventosPage() {
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:hidden">
                     <Clock className="h-3.5 w-3.5" /> {getTimeString(event.event_date)} hs
                   </div>
-                  
+
+                  {formatPrice(event.ticket_price) && (
+                    <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-xs font-bold whitespace-nowrap">
+                      {formatPrice(event.ticket_price)}
+                    </span>
+                  )}
+
                   {event.ticket_url ? (
                     <button 
                       onClick={(e) => {
@@ -286,7 +260,7 @@ export default function EventosPage() {
                       Más info
                     </span>
                   )}
-                  
+
                   {/* Botón WhatsApp */}
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Me interesa el evento: ${event.title} el ${getFullDateString(event.event_date)} en ${event.location_name}, ${event.address_city}. ¿Me das más info?`)}`}

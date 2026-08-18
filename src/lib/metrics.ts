@@ -29,3 +29,8 @@ export async function decrementFollow() {
 export async function incrementListener() {
   await supabase.rpc('increment_artist_listener');
 }
+
+export async function incrementPageView(path: string) {
+  await supabase.rpc('increment_page_view', { target_path: path });
+}
+

@@ -88,6 +88,7 @@ export default function BioPage() {
   const { isPlaying, setPlaying } = usePlayerStore();
   const [profile, setProfile] = useState<ArtistProfile>(mockProfile);
   const [albums, setAlbums] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -173,6 +174,27 @@ export default function BioPage() {
       }
     }
     fetchAlbums();
+  }, []);
+
+  // Fetch upcoming events
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('id, title, slug, location_name, address_city, event_date, ticket_url')
+          .eq('status', 'upcoming')
+          .order('event_date', { ascending: true })
+          .limit(3);
+
+        if (!error && data) {
+          setEvents(data);
+        }
+      } catch (err) {
+        console.error('Error fetching events for bio:', err);
+      }
+    }
+    fetchEvents();
   }, []);
 
   if (loading) {
@@ -328,6 +350,7 @@ export default function BioPage() {
         </section>
 
         {/* Próximos Eventos */}
+        {events.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -339,34 +362,38 @@ export default function BioPage() {
             </a>
           </div>
           <div className="space-y-3">
-            {[
-              { date: '15 Nov 2026', venue: 'Niceto Club', city: 'Buenos Aires', ticket: 'https://passline.com' },
-              { date: '05 Dic 2026', venue: 'Centro Cultural San Martín', city: 'Buenos Aires', ticket: 'https://ticketek.com.ar' },
-            ].map((event, i) => (
+            {events.map((event) => (
               <a
-                key={i}
-                href={event.ticket}
+                key={event.id}
+                href={event.ticket_url || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-4 p-4 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
               >
                 <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex flex-col items-center justify-center text-center flex-shrink-0">
-                  <span className="text-2xl font-black text-white">{event.date.split(' ')[0]}</span>
-                  <span className="text-[10px] uppercase font-bold text-primary">{event.date.split(' ')[1]}</span>
+                  <span className="text-2xl font-black text-white">{new Date(event.event_date).toLocaleDateString('es-ES', { day: 'numeric' })}</span>
+                  <span className="text-[10px] uppercase font-bold text-primary">{new Date(event.event_date).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white group-hover:text-primary transition-colors">{event.venue}</p>
+                  <p className="font-semibold text-white group-hover:text-primary transition-colors">{event.location_name}</p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> {event.city}
+                    <MapPin className="h-3 w-3" /> {event.address_city}
                   </p>
                 </div>
-                <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
-                  Entradas
-                </span>
+                {event.ticket_url ? (
+                  <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
+                    Entradas
+                  </span>
+                ) : (
+                  <span className="px-4 py-2 rounded-full border border-transparent text-muted-foreground text-sm font-bold">
+                    Más info
+                  </span>
+                )}
               </a>
             ))}
           </div>
         </section>
+        )}
 
         {/* Redes Sociales */}
         <section className="mb-16">
