@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
+  description TEXT,
   location_name TEXT,
   address_city TEXT,
   google_maps_url TEXT,

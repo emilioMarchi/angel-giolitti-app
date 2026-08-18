@@ -110,6 +110,7 @@ CREATE TABLE media_items (
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
+  description TEXT, -- Descripcion del evento / informacion extra
   location_name TEXT,
   address_city TEXT,
   google_maps_url TEXT, -- Enlace a ubicación en Google Maps

@@ -9,6 +9,7 @@ interface Event {
   id: string;
   title: string;
   slug: string;
+  description: string;
   location_name: string;
   address_city: string;
   google_maps_url: string;
@@ -27,6 +28,7 @@ export default function AdminEventos() {
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [locationName, setLocationName] = useState('');
   const [addressCity, setAddressCity] = useState('');
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
@@ -190,6 +192,7 @@ export default function AdminEventos() {
   const handleNewEvent = () => {
     setSelectedEvent(null);
     setTitle('');
+    setDescription('');
     setLocationName('');
     setAddressCity('');
     setGoogleMapsUrl('');
@@ -207,6 +210,7 @@ export default function AdminEventos() {
   const handleEditEvent = (event: Event) => {
     setSelectedEvent(event);
     setTitle(event.title);
+    setDescription(event.description || '');
     setLocationName(event.location_name || '');
     setAddressCity(event.address_city || '');
     setGoogleMapsUrl(event.google_maps_url || '');
@@ -243,6 +247,7 @@ export default function AdminEventos() {
       const eventData = {
         title,
         slug: slugValue,
+        description,
         location_name: locationName,
         address_city: addressCity,
         google_maps_url: googleMapsUrl,
@@ -453,6 +458,17 @@ export default function AdminEventos() {
                   placeholder="Ej: Ángel Giolitti Live en Niceto"
                   required
                   className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-white/50">Descripción del Evento — Opcional</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ej: Set de 2 horas con el synth modular, invitados sorpresa y apertura local. Podés escribir varias líneas."
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors resize-y"
                 />
               </div>
 

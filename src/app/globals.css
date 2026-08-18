@@ -1585,3 +1585,20 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL ADMIN - ZOOM ESCALABLE SIN RECORTES
+   El zoom escala tipografía/elementos; el ancho/alto compensado
+   (100vw + 100vh ÷ zoom) evita que el contenido quede fuera de pantalla.
+   ══════════════════════════════════════════════════════════════ */
+
+.admin-zoom-root {
+  zoom: var(--admin-zoom, 1.09);
+  width: calc(100vw / var(--admin-zoom, 1.09));
+  height: calc(100vh / var(--admin-zoom, 1.09));
+}
+
+.admin-zoom-root .fixed.inset-0 {
+  width: calc(100vw / var(--admin-zoom, 1.09));
+  height: calc(100vh / var(--admin-zoom, 1.09));
+}

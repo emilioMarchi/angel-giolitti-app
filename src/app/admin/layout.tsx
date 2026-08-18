@@ -11,7 +11,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-[99] flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="admin-zoom-root fixed inset-0 z-[99] flex bg-background text-foreground overflow-hidden">
       {children}
     </div>
   );

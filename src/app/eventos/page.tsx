@@ -9,6 +9,7 @@ interface EventData {
   id: string;
   title: string;
   slug: string;
+  description: string;
   location_name: string;
   address_city: string;
   google_maps_url: string;
@@ -143,6 +144,18 @@ export default function EventosPage() {
                 </div>
               </a>
             </div>
+
+            {/* Descripción del evento */}
+            {selectedEvent.description && (
+              <div className="max-w-2xl">
+                <h2 className="text-sm uppercase font-bold tracking-widest text-primary mb-3">
+                  Sobre el Show
+                </h2>
+                <p className="text-muted-foreground text-base leading-relaxed whitespace-pre-line">
+                  {selectedEvent.description}
+                </p>
+              </div>
+            )}
 
             {/* Acciones */}
             <div className="flex items-center gap-4 mt-10 flex-wrap">

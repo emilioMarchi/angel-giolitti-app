@@ -220,7 +220,7 @@ export default function AdminSPA() {
           })}
         </nav>
 
-        <div className="px-3 py-3 border-t border-white/[0.06] space-y-1">
+        <div className="px-3 pt-3 pb-6 border-t border-white/[0.06] space-y-1">
           <a
             href="/"
             target="_blank"

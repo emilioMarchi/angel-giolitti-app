@@ -1,59 +1,24 @@
-forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
-forward-logs-shared.ts:95 [HMR] connected
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 223ms
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-AdminMusica.tsx:180  POST http://localhost:3000/api/r2/presign 401 (Unauthorized)
-(anonymous) @ AdminMusica.tsx:180
-(anonymous) @ AdminMusica.tsx:326
-await in (anonymous)
-executeDispatch @ react-dom-client.development.js:20610
-runWithFiberInDEV @ react-dom-client.development.js:986
-processDispatchQueue @ react-dom-client.development.js:20660
-(anonymous) @ react-dom-client.development.js:21234
-batchedUpdates$1 @ react-dom-client.development.js:3377
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:20814
-dispatchEvent @ react-dom-client.development.js:25817
-dispatchDiscreteEvent @ react-dom-client.development.js:25785
-AdminMusica.tsx:351 Error saving track: Error: No autorizado
-    at uploadToR2 (AdminMusica.tsx:188:13
-    at async handleSaveTrack (AdminMusica.tsx:326:24)
-error @ intercept-console-error.ts:48
-(anonymous) @ AdminMusica.tsx:351
-await in (anonymous)
-executeDispatch @ react-dom-client.development.js:20610
-runWithFiberInDEV @ react-dom-client.development.js:986
-processDispatchQueue @ react-dom-client.development.js:20660
-(anonymous) @ react-dom-client.development.js:21234
-batchedUpdates$1 @ react-dom-client.development.js:3377
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:20814
-dispatchEvent @ react-dom-client.development.js:25817
-dispatchDiscreteEvent @ react-dom-client.development.js:25785
-forward-logs-shared.ts:95 [Fast Refresh] done in 14018ms
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+Access to fetch at 'https://angel-giolitti-bucket.560700acbd56842d4025e6330ec862b2.r2.cloudflarestorage.com/flyers/1787070037244-meditacion-sonora-flyer.webp?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=54b236d56a4b39af735d27de03011ce1%2F20260818%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260818T162037Z&X-Amz-Expires=3600&X-Amz-Signature=7b6874afdeafafd576c2df3a05de5866258769c019f6dfb21221114458542e7a&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject' from origin 'https://angel-giolitti-app.vercel.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+0csayyju497l7.js:6  PUT https://angel-giolitti-bucket.560700acbd56842d4025e6330ec862b2.r2.cloudflarestorage.com/flyers/1787070037244-meditacion-sonora-flyer.webp?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=54b236d56a4b39af735d27de03011ce1%2F20260818%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260818T162037Z&X-Amz-Expires=3600&X-Amz-Signature=7b6874afdeafafd576c2df3a05de5866258769c019f6dfb21221114458542e7a&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject net::ERR_FAILED
+J @ 0csayyju497l7.js:6
+await in J
+Z @ 0csayyju497l7.js:6
+await in Z
+sJ @ 25o46h8mdjlrg.js:1
+(anonymous) @ 25o46h8mdjlrg.js:1
+tD @ 25o46h8mdjlrg.js:1
+s4 @ 25o46h8mdjlrg.js:1
+fz @ 25o46h8mdjlrg.js:1
+fT @ 25o46h8mdjlrg.js:1
+0csayyju497l7.js:6 Error saving event: TypeError: Failed to fetch
+    at J (0csayyju497l7.js:6:21626)
+    at async Z (0csayyju497l7.js:6:22481)
 
-====================
-PENDIENTE - AGREGAR COLUMNA EN LA DB (Supabase SQL Editor):
-ALTER TABLE events ADD COLUMN IF NOT EXISTS ticket_price NUMERIC(10,2);
+====================================================================
+PENDIENTE - EJECUTAR EN SUPABASE (SQL Editor) ANTES DE USAR EN PROD:
+Descripción de eventos (campo nuevo en panel admin + vista evento):
 
-PENDIENTE - ELIMINAR VINCULO GALERIA-ALBUM (proyecto es nucleo):
-ALTER TABLE media_albums DROP COLUMN IF EXISTS album_id;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS description TEXT;
 
-====================
-R2 + SEGURIDAD PANEL ADMIN (revisión 18/08/2026) - ACCIONES PARA PRODUCCIÓN:
-
-1. RLS Supabase (schema.sql): YA APLICADO. Políticas "Admin total" delimitadas por email 'admin@angelgiolitti.com'.
-2. Middleware /admin: YA IMPLEMENTADO vía src/proxy.ts + src/utils/supabase/middleware.ts (redirige a / si no coincide ADMIN_EMAIL).
-   NOTA: Next 16 usa proxy.ts, NO middleware.ts.
-3. DISCREPANCIA EMAIL ADMIN: schema.sql y middleware usan admin@angelgiolitti.com, pero plan-panel-admin.md usa angelgiolitti@gmail.com.
-   → UNIFICAR en schema.sql + middleware + ADMIN_EMAIL de .env.local (elegir 1 solo email).
-4. Fase 3.1 plan-panel-admin (DELETE objetos huérfanos en R2): NO IMPLEMENTADO. Falta DeleteObjectCommand / endpoint /api/r2/delete.
-5. CORS bucket R2 (Dashboard → bucket → Settings → CORS):
-   → GET público + PUT SOLO desde https://angelgiolitti.com.ar (y localhost:3000 en dev).
-   → AllowedHeaders: Content-Type, Authorization. ExposedHeaders: ETag. Quitar '*' o dominios de más.
-6. Custom domain R2 (RECOMENDADO): atar media.angelgiolitti.com.ar para no depender de pub-….r2.dev y deshabilitar acceso público salvaje.
-7. API Token R2 mínimo: R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY deben ser token con scope SOLO a angel-giolitti-bucket (Object Read + Write), no global.
-8. Endurecer src/app/api/r2/presign/route.ts: hoy solo valida sesión autenticada → CUALQUIER usuario logueado puede subir.
-   → Rechazar si user.email !== ADMIN_EMAIL. Validar contentType/extensiones permitidas + límite de tamaño + whitelist de folder.
-9. Fase 3.1 código: crear POST /api/r2/delete (misma verificación admin) y llamarlo en borrados de AdminMusica/AdminEventos/AdminGaleria.
-====================
+(También está en scripts/add_event_description.sql)
+====================================================================
