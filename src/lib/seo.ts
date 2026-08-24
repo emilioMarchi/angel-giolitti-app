@@ -190,6 +190,9 @@ export const getEventMeta = cache(async (slug: string): Promise<EntityMeta> => {
 
     const isPast = data.status === 'completed';
     const dateLabel = formatDate(data.event_date);
+    const shortDateLabel = new Date(data.event_date)
+      .toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short' })
+      .replace(/\./g, '');
     const timeLabel = new Date(data.event_date).toLocaleTimeString('es-AR', {
       hour: '2-digit',
       minute: '2-digit',
@@ -212,7 +215,7 @@ export const getEventMeta = cache(async (slug: string): Promise<EntityMeta> => {
 
     return {
       found: true,
-      title: `${data.title.trim()}${place ? ` — ${place}` : ''}`,
+      title: `${data.title.trim()}${shortDateLabel ? ` — ${shortDateLabel}, ${timeLabel} hs` : ''}`,
       description: data.description?.trim()
         ? `${data.description.trim()} — ${details}.`
         : `${isPast ? 'Reviví' : 'Viví'} "${data.title.trim()}" de Ángel Giolitti en vivo. ${details}.`,
