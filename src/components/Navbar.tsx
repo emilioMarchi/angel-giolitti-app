@@ -150,7 +150,7 @@ export default function Navbar() {
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <div className="flex items-center gap-3 px-3 pb-2 border-b border-border/30">
               <Library className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-white uppercase tracking-wider">Tu Biblioteca</span>
+              <span className="text-sm font-semibold text-white uppercase tracking-wider">Biblioteca</span>
             </div>
 
             <nav className="space-y-1">

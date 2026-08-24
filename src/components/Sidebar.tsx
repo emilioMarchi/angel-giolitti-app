@@ -68,7 +68,7 @@ export default function Sidebar() {
         <div className="sidebar-library-header">
           <div className="sidebar-library-title">
             <Library className="h-5 w-5" />
-            <span>Tu Biblioteca</span>
+            <span>Biblioteca</span>
           </div>
         </div>
 
