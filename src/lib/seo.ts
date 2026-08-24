@@ -3,7 +3,17 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { getR2Url } from '@/lib/utils';
 
-export const siteUrl = 'https://angelgiolitti.com.ar';
+const normalizeUrl = (raw: string | undefined): string | null => {
+  if (!raw) return null;
+  return raw.startsWith('http') ? raw : `https://${raw}`;
+};
+
+const deployedUrl =
+  normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
+  normalizeUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
+  normalizeUrl(process.env.VERCEL_URL);
+
+export const siteUrl = deployedUrl || 'https://angelgiolitti.com.ar';
 export const defaultOgImage = getR2Url('images/gallery/handangel/photo-2.webp');
 export const siteName = 'Ángel Giolitti | Plataforma Oficial';
 
