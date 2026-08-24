@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const ogImage = getR2Url("images/gallery/handangel/photo-2.webp");
+const ogImage = getR2Url("images/gallery/handangel/photo-1.webp");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -57,8 +57,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: ogImage,
-        width: 1200,
-        height: 630,
+        width: 1601,
+        height: 1201,
         alt: "Ángel Giolitti - Músico, Productor, Compositor",
       },
     ],
