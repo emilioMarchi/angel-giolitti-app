@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Outfit, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
-import { getR2Url } from "@/lib/utils";
 import { siteUrl } from "@/lib/seo";
 
 const inter = Inter({
@@ -20,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const ogImage = getR2Url("images/gallery/handangel/photo-1.webp");
+const ogImage = "/foto-portada-1.jpeg";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -57,8 +56,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: ogImage,
-        width: 1601,
-        height: 1201,
+        width: 859,
+        height: 853,
         alt: "Ángel Giolitti - Músico, Productor, Compositor",
       },
     ],
