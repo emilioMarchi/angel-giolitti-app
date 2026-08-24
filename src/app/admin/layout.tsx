@@ -3,6 +3,10 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Panel de Administración | Ángel Giolitti',
   description: 'Panel de administración privado para gestionar el contenido del sitio web.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function AdminLayout({

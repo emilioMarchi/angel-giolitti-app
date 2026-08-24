@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import GalleryAlbumClient from './GalleryAlbumClient';
-import { getMediaAlbumMeta, getPageMetadata } from '@/lib/seo';
+import EventosClient from '../EventosClient';
+import { getEventMeta, getPageMetadata } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -9,31 +9,32 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const meta = await getMediaAlbumMeta(slug);
+  const meta = await getEventMeta(slug);
 
   if (!meta.found) {
     return getPageMetadata({
-      title: 'Galería no encontrada',
-      description: 'La galería que buscás no existe o fue removida.',
-      path: `/galeria/${slug}`,
+      title: 'Evento no encontrado',
+      description: 'El evento que buscás no existe o fue removido.',
+      path: `/eventos/${slug}`,
     });
   }
 
   return getPageMetadata({
     title: meta.title,
     description: meta.description,
-    path: `/galeria/${slug}`,
+    path: `/eventos/${slug}`,
     image: meta.image,
+    type: 'article',
   });
 }
 
-export default async function GalleryAlbumPage({ params }: Props) {
+export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params;
-  const meta = await getMediaAlbumMeta(slug);
+  const meta = await getEventMeta(slug);
 
   if (!meta.found) {
     notFound();
   }
 
-  return <GalleryAlbumClient />;
+  return <EventosClient initialSlug={slug} />;
 }

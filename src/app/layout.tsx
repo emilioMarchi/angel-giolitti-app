@@ -43,6 +43,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "es_AR",
@@ -85,7 +88,6 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://pub-319a9d74deeb4bcebc10ae6384cf79b3.r2.dev" />
         <link rel="dns-prefetch" href="https://pub-319a9d74deeb4bcebc10ae6384cf79b3.r2.dev" />
-        <link rel="canonical" href={siteUrl} />
         <link rel="sitemap" href={`${siteUrl}/sitemap.xml`} />
         <link rel="robots" href={`${siteUrl}/robots.txt`} />
       </head>
