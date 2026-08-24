@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { getR2Url } from '@/lib/utils';
 
 export const siteUrl = 'https://angelgiolitti.com.ar';
-export const defaultOgImage = `${siteUrl}/images/gallery/handangel/photo-7.webp`;
+export const defaultOgImage = getR2Url('images/gallery/handangel/photo-2.webp');
 export const siteName = 'Ángel Giolitti | Plataforma Oficial';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -77,7 +77,7 @@ export const getAlbumMeta = cache(async (slug: string): Promise<EntityMeta> => {
   try {
     const { data } = await supabaseServer
       .from('albums')
-      .select('title, description, cover_url, type, release_year')
+      .select('title, description, cover_url, type, release_year, members, project:projects(title), tracks(count)')
       .eq('slug', slug)
       .maybeSingle();
 
@@ -86,14 +86,30 @@ export const getAlbumMeta = cache(async (slug: string): Promise<EntityMeta> => {
     }
 
     const typeLabel =
-      data.type === 'album' ? 'Álbum' : data.type === 'ep' ? 'EP' : 'Single';
+      data.type === 'album' ? 'Álbum' : data.type === 'ep' ? 'EP' : data.type === 'single' ? 'Single' : 'Álbum';
+
+    const trackCount = Array.isArray(data.tracks) && data.tracks[0]?.count != null ? data.tracks[0].count : 0;
+    const members = (data.members as Array<{ name: string }> | null) || [];
+    const project = (Array.isArray(data.project) ? data.project[0] : data.project) as { title: string } | null;
+
+    const details = [
+      typeLabel,
+      data.release_year ? String(data.release_year) : null,
+      trackCount > 0 ? `${trackCount} ${trackCount === 1 ? 'canción' : 'canciones'}` : null,
+      project?.title ? `Proyecto ${project.title}` : null,
+      members.length > 0
+        ? `Integrantes: ${members.slice(0, 3).map((m) => m.name).join(', ')}${members.length > 3 ? ' y más' : ''}`
+        : null,
+    ].filter(Boolean) as string[];
+
+    const base =
+      data.description?.trim() ||
+      `Escuchá "${data.title.trim()}" de Ángel Giolitti completo en la plataforma oficial.`;
 
     return {
       found: true,
       title: `${data.title.trim()} (${typeLabel}${data.release_year ? ` ${data.release_year}` : ''})`,
-      description:
-        data.description ||
-        `Escuchá "${data.title}" de Ángel Giolitti completa en la plataforma oficial.`,
+      description: `${base} — ${details.join(' · ')}.`,
       image: data.cover_url ? getR2Url(data.cover_url) : null,
     };
   } catch {
@@ -105,7 +121,7 @@ export const getProjectMeta = cache(async (slug: string): Promise<EntityMeta> =>
   try {
     const { data } = await supabaseServer
       .from('projects')
-      .select('title, summary, cover_image_url, profile_image_url')
+      .select('title, summary, category, creation_year, end_year, members, cover_image_url, profile_image_url')
       .eq('slug', slug)
       .maybeSingle();
 
@@ -113,12 +129,26 @@ export const getProjectMeta = cache(async (slug: string): Promise<EntityMeta> =>
       return { found: false, title: 'Proyecto no encontrado', description: '', image: null };
     }
 
+    const members = (data.members as Array<{ name: string }> | null) || [];
+
+    const details = [
+      data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1) : null,
+      data.creation_year
+        ? `${data.creation_year}${data.end_year ? `–${data.end_year}` : ' – actualidad'}`
+        : null,
+      members.length > 0
+        ? `Integrantes: ${members.slice(0, 3).map((m) => m.name).join(', ')}${members.length > 3 ? ' y más' : ''}`
+        : null,
+    ].filter(Boolean) as string[];
+
+    const base =
+      data.summary?.trim() ||
+      `Conocé "${data.title.trim()}", el proyecto de Ángel Giolitti: música, galerías y más.`;
+
     return {
       found: true,
-      title: data.title,
-      description:
-        data.summary ||
-        `Conocé "${data.title}", el proyecto de Ángel Giolitti: música, galerías y más.`,
+      title: data.title.trim(),
+      description: details.length > 0 ? `${base} — ${details.join(' · ')}.` : base,
       image: data.profile_image_url
         ? getR2Url(data.profile_image_url)
         : data.cover_image_url
@@ -142,7 +172,7 @@ export const getEventMeta = cache(async (slug: string): Promise<EntityMeta> => {
   try {
     const { data } = await supabaseServer
       .from('events')
-      .select('title, slug, description, event_date, location_name, address_city, flyer_image_url, status')
+      .select('title, slug, description, event_date, location_name, address_city, flyer_image_url, ticket_price, status')
       .eq('slug', slug)
       .maybeSingle();
 
@@ -152,16 +182,32 @@ export const getEventMeta = cache(async (slug: string): Promise<EntityMeta> => {
 
     const isPast = data.status === 'completed';
     const dateLabel = formatDate(data.event_date);
+    const timeLabel = new Date(data.event_date).toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
     const place = [data.location_name, data.address_city].filter(Boolean).join(', ');
+    const price =
+      data.ticket_price != null
+        ? `Entradas: $ ${data.ticket_price.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`
+        : null;
+
+    const details = [
+      `${dateLabel}, ${timeLabel} hs`,
+      place || null,
+      price,
+      isPast ? 'Evento finalizado' : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
     return {
       found: true,
       title: `${data.title.trim()}${place ? ` — ${place}` : ''}`,
-      description:
-        data.description ||
-        `${isPast ? 'Fue' : 'Viví'} ${data.title} el ${dateLabel}${place ? ` en ${place}` : ''}. ${
-          isPast ? 'Reviví el show en la plataforma oficial.' : 'Entradas e info en la plataforma oficial.'
-        }`,
+      description: data.description?.trim()
+        ? `${data.description.trim()} — ${details}.`
+        : `${isPast ? 'Reviví' : 'Viví'} "${data.title.trim()}" de Ángel Giolitti en vivo. ${details}.`,
       image: data.flyer_image_url ? getR2Url(data.flyer_image_url) : null,
     };
   } catch {

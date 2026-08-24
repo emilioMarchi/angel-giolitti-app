@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
+import { getR2Url } from "@/lib/utils";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = "https://angelgiolitti.com.ar";
-const ogImage = `${siteUrl}/images/gallery/handangel/photo-7.webp`;
+const ogImage = getR2Url("images/gallery/handangel/photo-2.webp");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
