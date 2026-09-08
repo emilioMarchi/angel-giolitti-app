@@ -3,15 +3,13 @@
 import { useState, useEffect } from 'react';
 import { 
   Play, 
-  Pause, 
   Disc3, 
   Music2, 
   Clock, 
   Heart, 
   ArrowLeft, 
-  ListMusic, 
-  ChevronRight,
-  Headphones
+  Headphones,
+  ListMusic
 } from '@/lib/lucide';
 import Link from 'next/link';
 import { usePlayerStore, Track } from '@/store/usePlayerStore';
@@ -47,11 +45,31 @@ interface TrackDB {
   created_at: string;
 }
 
-interface Playlist {
+interface PlaylistDB {
   id: string;
   title: string;
-  description: string;
-  cover_url: string;
+  description: string | null;
+  cover_url: string | null;
+  is_official: boolean;
+  playlist_tracks: Array<{
+    position: number;
+    tracks: {
+      id: string;
+      album_id: string;
+      title: string;
+      audio_url: string;
+      duration_seconds: number;
+      track_order: number;
+      albums: { title: string; cover_url: string | null } | null;
+    } | null;
+  }>;
+}
+
+interface PlaylistView {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
   tracks: Track[];
 }
 
@@ -68,30 +86,6 @@ interface AlbumView {
   members: Array<{ name: string; roll: string[] }>;
   tracks: Track[];
 }
-
-const mockPlaylists: Playlist[] = [
-  {
-    id: 'pl-1',
-    title: 'Inspiración Electro-Organic',
-    description: 'Selección de tracks de Ángel Giolitti para concentrarse y entrar en trance.',
-    cover_url: '',
-    tracks: [
-      { id: 't-101', album_id: 'alb-1', title: 'Horizonte Infinito', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration_seconds: 372, track_order: 1, album_title: 'Horizonte Infinito' },
-      { id: 't-202', album_id: 'alb-2', title: 'Frecuencia Modulada', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', duration_seconds: 356, track_order: 2, album_title: 'Analog Pulse' },
-      { id: 't-301', album_id: 'alb-3', title: 'Ciudad Nocturna', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', duration_seconds: 288, track_order: 3, album_title: 'Ciudad Nocturna' }
-    ]
-  },
-  {
-    id: 'pl-2',
-    title: 'Late Night Sessions',
-    description: 'Clásicos y rarezas de música electrónica ambiente para las altas horas de la noche.',
-    cover_url: '',
-    tracks: [
-      { id: 't-102', album_id: 'alb-1', title: 'Ecos del Silencio', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', duration_seconds: 298, track_order: 1, album_title: 'Horizonte Infinito' },
-      { id: 't-105', album_id: 'alb-1', title: 'Viento Solar', audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', duration_seconds: 315, track_order: 2, album_title: 'Horizonte Infinito' }
-    ]
-  }
-];
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return '0:00';
@@ -134,12 +128,39 @@ function mapAlbumToView(dbAlbum: AlbumDB): AlbumView {
   };
 }
 
+function mapPlaylistToView(db: PlaylistDB): PlaylistView {
+  const tracks: Track[] = (db.playlist_tracks || [])
+    .filter((pt) => pt.tracks !== null)
+    .sort((a, b) => a.position - b.position)
+    .map((pt) => {
+      const t = pt.tracks!;
+      return {
+        id: t.id,
+        album_id: t.album_id,
+        title: t.title,
+        audio_url: getR2Url(t.audio_url),
+        duration_seconds: t.duration_seconds,
+        track_order: t.track_order,
+        album_title: t.albums?.title || '',
+        cover_url: getR2Url(t.albums?.cover_url) || undefined,
+      };
+    });
+
+  return {
+    id: db.id,
+    title: db.title,
+    description: db.description,
+    cover_url: getR2Url(db.cover_url),
+    tracks,
+  };
+}
+
 export default function MusicaPage() {
   const { playTrack, playQueue, currentTrack, isPlaying, togglePlay } = usePlayerStore();
   const [albums, setAlbums] = useState<AlbumView[]>([]);
-  const [playlists] = useState<Playlist[]>(mockPlaylists);
+  const [playlists, setPlaylists] = useState<PlaylistView[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumView | null>(null);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistView | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -154,6 +175,18 @@ export default function MusicaPage() {
         if (!albumsError && dbAlbums && dbAlbums.length > 0) {
           const mapped = (dbAlbums as AlbumDB[]).map(mapAlbumToView);
           setAlbums(mapped);
+        }
+
+        const { data: playlistsData, error: playlistsError } = await supabase
+          .from('playlists')
+          .select('*, playlist_tracks(*, tracks(id, album_id, title, audio_url, duration_seconds, track_order, albums(title, cover_url)))')
+          .eq('is_official', true)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false });
+
+        if (!playlistsError && playlistsData && playlistsData.length > 0) {
+          const mappedPlaylists = (playlistsData as PlaylistDB[]).map(mapPlaylistToView);
+          setPlaylists(mappedPlaylists);
         }
       } catch (err) {
         console.error('Error al cargar datos de Supabase:', err);
@@ -317,7 +350,6 @@ export default function MusicaPage() {
     const tracks = selectedPlaylist.tracks;
     return (
       <div className="music-detail-view px-6 py-6 animate-fade-in">
-        {/* Botón de volver */}
         <button 
           onClick={() => setSelectedPlaylist(null)}
           className="flex items-center gap-2 mb-6 text-muted-foreground hover:text-white transition-colors font-semibold text-sm"
@@ -326,7 +358,6 @@ export default function MusicaPage() {
           Volver a música
         </button>
 
-        {/* Cabecera de la Playlist */}
         <div className="flex flex-col md:flex-row gap-6 items-end mb-8">
           <div className="w-48 h-48 md:w-60 md:h-60 rounded-md bg-gradient-to-br from-teal-900 to-black shadow-2xl flex-shrink-0 flex items-center justify-center relative overflow-hidden group">
             {selectedPlaylist.cover_url ? (
@@ -339,7 +370,9 @@ export default function MusicaPage() {
           <div className="flex-1">
             <span className="text-xs uppercase font-bold tracking-widest text-primary">Playlist del Artista</span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-black mt-2 mb-4 leading-tight">{selectedPlaylist.title}</h1>
-            <p className="text-sm text-muted-foreground mb-4">{selectedPlaylist.description}</p>
+            {selectedPlaylist.description && (
+              <p className="text-sm text-muted-foreground mb-4">{selectedPlaylist.description}</p>
+            )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-bold text-white">Ángel Giolitti</span>
               <span>•</span>
@@ -350,7 +383,6 @@ export default function MusicaPage() {
           </div>
         </div>
 
-        {/* Barra de controles rápidos */}
         <div className="flex items-center gap-6 mb-8">
           <button 
             onClick={() => handlePlayCollection(tracks)}
@@ -361,7 +393,6 @@ export default function MusicaPage() {
           </button>
         </div>
 
-        {/* Tabla de tracks */}
         <div className="track-list-table">
           <div className="grid grid-cols-[50px_40px_1fr_80px] border-b border-white/10 pb-2 mb-4 text-xs font-bold tracking-widest text-muted-foreground px-4 uppercase">
             <div>#</div>
@@ -403,7 +434,7 @@ export default function MusicaPage() {
                       <p className={`font-semibold ${isCurrent ? 'text-primary' : 'text-white'}`}>
                         {track.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">{track.album_title || 'Artista'}</p>
+                      <p className="text-xs text-muted-foreground">{track.album_title || 'Ángel Giolitti'}</p>
                     </div>
 
                     <div className="text-right text-sm text-muted-foreground">
@@ -534,43 +565,45 @@ export default function MusicaPage() {
       </section>
 
       {/* ── SECCIÓN PLAYLISTS CURADAS ── */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Playlists del Artista</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {playlists.map((playlist) => (
-            <div 
-              key={playlist.id}
-              onClick={() => setSelectedPlaylist(playlist)}
-              className="flex items-center gap-4 p-4 rounded-lg bg-card/40 border border-white/5 hover:bg-card/70 hover:border-primary/20 transition-all duration-300 cursor-pointer group"
-            >
-              <div className="w-20 h-20 rounded bg-gradient-to-br from-teal-900/50 to-black/80 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                {playlist.cover_url ? (
-                  <img src={playlist.cover_url} alt={playlist.title} className="w-full h-full object-cover" />
-                ) : (
-                  <ListMusic className="h-10 w-10 text-primary/70 transition-colors group-hover:text-primary" />
-                )}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlayCollection(playlist.tracks);
-                  }}
-                  className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300"
-                  aria-label="Reproducir playlist"
-                >
-                  <Play className="h-4 w-4 fill-current translate-x-[1px]" />
-                </button>
+      {playlists.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/5 pb-2">Playlists del Artista</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {playlists.map((playlist) => (
+              <div 
+                key={playlist.id}
+                onClick={() => setSelectedPlaylist(playlist)}
+                className="flex items-center gap-4 p-4 rounded-lg bg-card/40 border border-white/5 hover:bg-card/70 hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+              >
+                <div className="w-20 h-20 rounded bg-gradient-to-br from-teal-900/50 to-black/80 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                  {playlist.cover_url ? (
+                    <img src={playlist.cover_url} alt={playlist.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <ListMusic className="h-10 w-10 text-primary/70 transition-colors group-hover:text-primary" />
+                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayCollection(playlist.tracks);
+                    }}
+                    className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300"
+                    aria-label="Reproducir playlist"
+                  >
+                    <Play className="h-4 w-4 fill-current translate-x-[1px]" />
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-white group-hover:text-primary transition-colors truncate">{playlist.title}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-snug">{playlist.description}</p>
+                  <p className="text-[10px] text-muted-foreground/80 mt-2 font-semibold">
+                    {playlist.tracks.length} CANCIONES
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-white group-hover:text-primary transition-colors truncate">{playlist.title}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-snug">{playlist.description}</p>
-                <p className="text-[10px] text-muted-foreground/80 mt-2 font-semibold">
-                  {playlist.tracks.length} CANCIONES
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );

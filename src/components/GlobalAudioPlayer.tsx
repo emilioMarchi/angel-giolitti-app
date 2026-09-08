@@ -44,6 +44,7 @@ export default function GlobalAudioPlayer() {
     currentIndex,
     likedTrackIds,
     isShuffle,
+    repeatMode,
     togglePlay,
     nextTrack,
     previousTrack,
@@ -53,6 +54,7 @@ export default function GlobalAudioPlayer() {
     setDuration,
     toggleLike,
     toggleShuffle,
+    toggleRepeat,
   } = usePlayerStore();
 
   // Tema por defecto al cargar el sitio
@@ -220,8 +222,8 @@ export default function GlobalAudioPlayer() {
   );
 
   const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
-  const hasNext = currentIndex < queue.length - 1;
-  const hasPrev = currentIndex > 0 || progress > 3;
+  const hasNext = repeatMode === 'all' || repeatMode === 'one' || currentIndex < queue.length - 1;
+  const hasPrev = repeatMode === 'all' || repeatMode === 'one' || currentIndex > 0 || progress > 3;
   const effectiveVolume = isMuted ? 0 : volume;
 
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
@@ -322,10 +324,15 @@ export default function GlobalAudioPlayer() {
             </button>
 
             <button
-              className="player-control-btn"
-              aria-label="Repetir"
+              onClick={toggleRepeat}
+              className={`player-control-btn relative ${repeatMode !== 'off' ? 'text-primary' : ''}`}
+              aria-label={repeatMode === 'one' ? 'Repetir uno' : repeatMode === 'all' ? 'Repetir todo' : 'Repetir'}
+              aria-pressed={repeatMode !== 'off'}
             >
               <Repeat className="h-4 w-4" />
+              {repeatMode === 'one' && (
+                <span className="absolute -top-1 -right-1 text-[8px] font-bold text-primary leading-none">1</span>
+              )}
             </button>
           </div>
 
