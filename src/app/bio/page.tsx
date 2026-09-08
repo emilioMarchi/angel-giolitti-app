@@ -21,6 +21,23 @@ import { supabase } from '@/lib/supabase';
 import { getR2Url } from '@/lib/utils';
 import { InstagramIcon, YoutubeIcon, SpotifyIcon, SoundCloudIcon, TwitterIcon, FacebookIcon } from '@/components/BrandIcons';
 
+function formatEventDate(isoString: string): { day: string; month: string } {
+  const d = new Date(isoString);
+  return {
+    day: d.toLocaleDateString('es-ES', { day: '2-digit' }),
+    month: d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase(),
+  };
+}
+
+function formatEventTime(isoString: string): string {
+  return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatPrice(price: number | null): string | null {
+  if (price == null) return null;
+  return price.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: price % 1 === 0 ? 0 : 2 });
+}
+
 interface ArtistProfile {
   id: string;
   name: string;
@@ -182,13 +199,14 @@ export default function BioPage() {
       try {
         const { data, error } = await supabase
           .from('events')
-          .select('id, title, slug, location_name, address_city, event_date, ticket_url')
-          .eq('status', 'upcoming')
+          .select('id, title, slug, location_name, address_city, event_date, flyer_image_url, ticket_price, ticket_url')
           .order('event_date', { ascending: true })
           .limit(3);
 
         if (!error && data) {
-          setEvents(data);
+          const now = new Date();
+          const upcoming = data.filter((e: any) => new Date(e.event_date) >= now);
+          setEvents(upcoming);
         }
       } catch (err) {
         console.error('Error fetching events for bio:', err);
@@ -362,33 +380,55 @@ export default function BioPage() {
             </a>
           </div>
           <div className="space-y-3">
-            {events.map((event) => (
-              <a
-                key={event.id}
-                href={`/eventos?event=${event.id}`}
-                className="group flex items-center gap-4 p-4 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
-              >
-                <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex flex-col items-center justify-center text-center flex-shrink-0">
-                  <span className="text-2xl font-black text-white">{new Date(event.event_date).toLocaleDateString('es-ES', { day: 'numeric' })}</span>
-                  <span className="text-[10px] uppercase font-bold text-primary">{new Date(event.event_date).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white group-hover:text-primary transition-colors">{event.location_name}</p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> {event.address_city}
-                  </p>
-                </div>
-                {event.ticket_url ? (
-                  <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
-                    Ver detalles
-                  </span>
-                ) : (
-                  <span className="px-4 py-2 rounded-full border border-transparent text-muted-foreground text-sm font-bold">
-                    Más info
-                  </span>
-                )}
-              </a>
-            ))}
+            {events.map((event) => {
+              const { day, month } = formatEventDate(event.event_date);
+              const time = formatEventTime(event.event_date);
+              const price = formatPrice(event.ticket_price);
+              return (
+                <a
+                  key={event.id}
+                  href={`/eventos/${event.slug}`}
+                  className="group relative flex items-center gap-4 p-4 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all overflow-hidden"
+                >
+                  <div className="w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden relative">
+                    {event.flyer_image_url ? (
+                      <img src={getR2Url(event.flyer_image_url)} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-zinc-800 flex items-center justify-center">
+                        <Calendar className="h-6 w-6 text-primary/30" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-xs text-primary font-bold mb-1">
+                      <span className="px-2 py-0.5 bg-primary/20 rounded">{day} {month}</span>
+                      <span className="text-muted-foreground/70">{time} hs</span>
+                    </div>
+                    <p className="font-semibold text-white group-hover:text-primary transition-colors line-clamp-1">{event.title}</p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {event.location_name} · {event.address_city}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {price && (
+                      <span className="px-3 py-1.5 rounded-full border border-primary/30 text-primary text-xs font-bold whitespace-nowrap">
+                        {price}
+                      </span>
+                    )}
+                    {event.ticket_url ? (
+                      <span className="px-4 py-2 rounded-full bg-primary text-black text-sm font-bold hover:bg-primary/90 transition-colors">
+                        Entradas
+                      </span>
+                    ) : (
+                      <span className="px-4 py-2 rounded-full border border-transparent text-muted-foreground text-sm font-bold">
+                        Más info
+                      </span>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </section>
         )}

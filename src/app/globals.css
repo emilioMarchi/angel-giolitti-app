@@ -965,6 +965,15 @@
   flex-direction: column;
 }
 
+.event-flyer-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .event-row {
   display: flex;
   align-items: center;
@@ -977,33 +986,6 @@
 
 .event-row:hover {
   background: rgba(255, 255, 255, 0.07);
-}
-
-.event-date-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
-}
-
-.event-date-day {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--primary);
-  line-height: 1;
-}
-
-.event-date-month {
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .event-info {

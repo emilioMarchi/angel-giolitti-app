@@ -14,12 +14,12 @@ interface EventData {
   location_name: string;
   address_city: string;
   google_maps_url: string;
-  event_date: string; // ISO String timestamp
+  event_date: string;
   flyer_image_url: string;
   ticket_url: string;
   ticket_price: number | null;
   is_featured: boolean;
-  status: 'upcoming' | 'completed';
+  status?: 'upcoming' | 'completed';
 }
 
 interface Props {
@@ -87,11 +87,16 @@ export default function EventosClient({ initialSlug }: Props) {
     return price.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: price % 1 === 0 ? 0 : 2 });
   };
 
-  const upcomingEvents = events.filter(e => e.status === 'upcoming');
-  const pastEvents = events.filter(e => e.status === 'completed').sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()); // Pasados en orden descendente
+  const now = new Date();
+  const upcomingEvents = events
+    .filter(e => new Date(e.event_date) >= now)
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  const pastEvents = events
+    .filter(e => new Date(e.event_date) < now)
+    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
 
   if (selectedEvent) {
-    const isPast = selectedEvent.status === 'completed';
+    const isPast = new Date(selectedEvent.event_date) < new Date();
     return (
       <div className="music-detail-view px-6 py-6 animate-fade-in pb-24 overflow-hidden">
         <button 
@@ -268,10 +273,16 @@ export default function EventosClient({ initialSlug }: Props) {
                 onClick={() => router.push(`/eventos/${event.slug}`)}
                 className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5"
               >
-                {/* Cuadro de Fecha (Calendario) */}
-                <div className="flex flex-col items-center justify-center w-16 h-16 rounded bg-black/50 border border-white/10 flex-shrink-0 group-hover:border-primary/50 transition-colors">
-                  <span className="text-[10px] uppercase font-bold text-primary tracking-widest">{getMonthShort(event.event_date)}</span>
-                  <span className="text-xl font-black text-white">{getDay(event.event_date)}</span>
+                {/* Flyer thumbnail */}
+                <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative bg-zinc-800 group-hover:scale-105 transition-transform duration-300">
+                  {event.flyer_image_url ? (
+                    <img src={event.flyer_image_url} alt={event.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 {/* Info principal de la fila */}
@@ -284,20 +295,20 @@ export default function EventosClient({ initialSlug }: Props) {
                     <span className="hidden sm:inline">•</span>
                     <span className="truncate">{event.address_city}</span>
                   </div>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1">
+                      {getDay(event.event_date)} {getMonthShort(event.event_date)} · {getTimeString(event.event_date)} hs
+                    </span>
+                    {formatPrice(event.ticket_price) && (
+                      <span className="flex items-center gap-1 text-primary font-semibold">
+                        {formatPrice(event.ticket_price)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Acciones derechas en la fila */}
                 <div className="flex items-center gap-4 mt-3 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground sm:hidden">
-                    <Clock className="h-3.5 w-3.5" /> {getTimeString(event.event_date)} hs
-                  </div>
-
-                  {formatPrice(event.ticket_price) && (
-                    <span className="px-4 py-2 rounded-full border border-primary/30 text-primary text-xs font-bold whitespace-nowrap">
-                      {formatPrice(event.ticket_price)}
-                    </span>
-                  )}
-
                   {event.ticket_url ? (
                     <button 
                       onClick={(e) => {
@@ -350,21 +361,30 @@ export default function EventosClient({ initialSlug }: Props) {
                 onClick={() => router.push(`/eventos/${event.slug}`)}
                 className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
               >
-                <div className="flex flex-col items-center justify-center w-14 h-14 rounded bg-transparent border border-white/5 flex-shrink-0">
-                  <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">{getMonthShort(event.event_date)}</span>
-                  <span className="text-lg font-black text-muted-foreground">{getDay(event.event_date)}</span>
+                {/* Flyer thumbnail */}
+                <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 relative bg-zinc-800 group-hover:scale-105 transition-transform duration-300 opacity-60">
+                  {event.flyer_image_url ? (
+                    <img src={event.flyer_image_url} alt={event.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-muted-foreground/40" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
                   <h3 className="text-base font-bold text-muted-foreground truncate group-hover:text-white transition-colors">
                     {event.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
                     <span>{event.location_name}</span>
                     <span className="hidden sm:inline">•</span>
                     <span className="truncate">{event.address_city}</span>
                     <span className="hidden sm:inline">•</span>
-                    <span>{new Date(event.event_date).getFullYear()}</span>
+                    <span>{getDay(event.event_date)} {getMonthShort(event.event_date)} {new Date(event.event_date).getFullYear()}</span>
+                    {formatPrice(event.ticket_price) && (
+                      <span className="text-primary font-semibold">{formatPrice(event.ticket_price)}</span>
+                    )}
                   </div>
                 </div>
               </div>

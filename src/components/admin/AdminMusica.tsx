@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, Music, Loader2, AlertCircle, ArrowLeft, Disc3 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Music, Loader2, AlertCircle, ArrowLeft, Disc3, ArrowUp, ArrowDown } from 'lucide-react';
 import FileUploadZone from './FileUploadZone';
 
 interface Album {
@@ -33,11 +33,18 @@ interface Track {
   likes_count: number;
 }
 
+interface PendingTrack {
+  file: File;
+  title: string;
+  order: number;
+}
+
 export default function AdminMusica() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [albumTrackCounts, setAlbumTrackCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'list' | 'album-form' | 'tracks-editor'>('list');
+  const [view, setView] = useState<'list' | 'album-form'>('list');
 
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTitle, setAlbumTitle] = useState('');
@@ -52,15 +59,36 @@ export default function AdminMusica() {
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
-  const [newTrackTitle, setNewTrackTitle] = useState('');
-  const [newTrackOrder, setNewTrackOrder] = useState(1);
-  const [newTrackAudioFile, setNewTrackAudioFile] = useState<File | null>(null);
-  const [savingTrack, setSavingTrack] = useState(false);
+  const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([]);
+  const [uploadingTracks, setUploadingTracks] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchAlbums();
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (albums.length > 0) fetchTrackCounts();
+  }, [albums]);
+
+  const fetchTrackCounts = async () => {
+    try {
+      const counts: Record<string, number> = {};
+      await Promise.all(
+        albums.map(async (album) => {
+          const { count } = await supabase
+            .from('tracks')
+            .select('*', { count: 'exact', head: true })
+            .eq('album_id', album.id);
+          counts[album.id] = count || 0;
+        })
+      );
+      setAlbumTrackCounts(counts);
+    } catch (err) {
+      console.error('Error fetching track counts:', err);
+    }
+  };
 
   const fetchProjects = async () => {
     try {
@@ -105,7 +133,6 @@ export default function AdminMusica() {
 
       if (error) throw error;
       setTracks(data || []);
-      setNewTrackOrder((data?.length || 0) + 1);
     } catch (err: any) {
       console.error('Error fetching tracks:', err);
     } finally {
@@ -252,8 +279,16 @@ export default function AdminMusica() {
 
   const handleManageTracks = (album: Album) => {
     setSelectedAlbum(album);
+    setAlbumTitle(album.title);
+    setAlbumType(album.type);
+    setAlbumYear(album.release_year);
+    setAlbumDesc(album.description || '');
+    setAlbumCoverUrl(album.cover_url || '');
+    setAlbumProjectId(album.project_id || '');
+    setCoverFile(null);
+    setErrorMessage('');
     fetchTracks(album.id);
-    setView('tracks-editor');
+    setView('album-form');
   };
 
   const handleSaveAlbum = async (e: React.FormEvent) => {
@@ -289,16 +324,23 @@ export default function AdminMusica() {
           .eq('id', selectedAlbum.id);
 
         if (error) throw error;
+        await fetchAlbums();
+        setView('list');
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('albums')
-          .insert([albumData]);
+          .insert([albumData])
+          .select()
+          .single();
 
         if (error) throw error;
-      }
 
-      await fetchAlbums();
-      setView('list');
+        const savedAlbum: Album = data;
+        setSelectedAlbum(savedAlbum);
+        setTracks([]);
+        setPendingTracks([]);
+        await fetchAlbums();
+      }
     } catch (err: any) {
       console.error('Error saving album:', err);
       setErrorMessage(err.message || 'Error al guardar el lanzamiento.');
@@ -324,42 +366,100 @@ export default function AdminMusica() {
     }
   };
 
-  const handleSaveTrack = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAlbum || !newTrackTitle.trim() || !newTrackAudioFile) return;
+  const handleAddPendingTracks = (files: File[]) => {
+    const nextOrder = pendingTracks.length > 0
+      ? Math.max(...pendingTracks.map(t => t.order)) + 1
+      : (tracks.length || 0) + 1;
 
-    setSavingTrack(true);
+    const newPending: PendingTrack[] = files.map((file, i) => ({
+      file,
+      title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+      order: nextOrder + i,
+    }));
+
+    setPendingTracks(prev => [...prev, ...newPending]);
+  };
+
+  const handleRemovePendingTrack = (index: number) => {
+    setPendingTracks(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      return updated.map((t, i) => ({ ...t, order: tracks.length + i + 1 }));
+    });
+  };
+
+  const handlePendingTrackTitleChange = (index: number, title: string) => {
+    setPendingTracks(prev => prev.map((t, i) => i === index ? { ...t, title } : t));
+  };
+
+  const handlePendingTrackOrderChange = (index: number, order: number) => {
+    setPendingTracks(prev => prev.map((t, i) => i === index ? { ...t, order } : t));
+  };
+
+  const handleUploadPendingTracks = async () => {
+    if (!selectedAlbum || pendingTracks.length === 0) return;
+
+    setUploadingTracks(true);
+    setUploadProgress({ current: 0, total: pendingTracks.length });
+
     try {
-      const duration = await getAudioDuration(newTrackAudioFile);
+      const sorted = [...pendingTracks].sort((a, b) => a.order - b.order);
 
-      const extension = newTrackAudioFile.name.split('.').pop() || 'mp3';
-      const cleanTrackName = `${generateSlug(newTrackTitle)}.${extension}`;
-      const audioUrl = await uploadToR2(newTrackAudioFile, cleanTrackName, 'tracks');
+      for (let i = 0; i < sorted.length; i++) {
+        setUploadProgress({ current: i + 1, total: sorted.length });
+        const pt = sorted[i];
 
-      const trackData = {
-        album_id: selectedAlbum.id,
-        title: newTrackTitle,
-        slug: generateSlug(newTrackTitle),
-        audio_url: audioUrl,
-        duration_seconds: duration,
-        track_order: newTrackOrder,
-      };
+        const duration = await getAudioDuration(pt.file);
+        const extension = pt.file.name.split('.').pop() || 'mp3';
+        const cleanTrackName = `${generateSlug(pt.title)}.${extension}`;
+        const audioUrl = await uploadToR2(pt.file, cleanTrackName, 'tracks');
 
-      const { error } = await supabase
-        .from('tracks')
-        .insert([trackData]);
+        const { error } = await supabase.from('tracks').insert([{
+          album_id: selectedAlbum.id,
+          title: pt.title,
+          slug: generateSlug(pt.title),
+          audio_url: audioUrl,
+          duration_seconds: duration,
+          track_order: pt.order,
+        }]);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      setNewTrackTitle('');
-      setNewTrackAudioFile(null);
-      
+      setPendingTracks([]);
       await fetchTracks(selectedAlbum.id);
     } catch (err: any) {
-      console.error('Error saving track:', err);
-      alert('Error al subir la pista de audio.');
+      console.error('Error uploading tracks:', err);
+      alert('Error al subir pistas de audio.');
     } finally {
-      setSavingTrack(false);
+      setUploadingTracks(false);
+      setUploadProgress({ current: 0, total: 0 });
+    }
+  };
+
+  const handleReorderTrack = async (trackId: string, direction: 'up' | 'down') => {
+    const idx = tracks.findIndex(t => t.id === trackId);
+    if (idx === -1) return;
+
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= tracks.length) return;
+
+    const updated = [...tracks];
+    const tempOrder = updated[idx].track_order;
+    updated[idx] = { ...updated[idx], track_order: updated[swapIdx].track_order };
+    updated[swapIdx] = { ...updated[swapIdx], track_order: tempOrder };
+
+    const reordered = updated.sort((a, b) => a.track_order - b.track_order);
+    setTracks(reordered);
+
+    try {
+      await Promise.all(
+        reordered.map(t =>
+          supabase.from('tracks').update({ track_order: t.track_order }).eq('id', t.id)
+        )
+      );
+    } catch (err) {
+      console.error('Error reordering tracks:', err);
+      if (selectedAlbum) await fetchTracks(selectedAlbum.id);
     }
   };
 
@@ -447,7 +547,11 @@ export default function AdminMusica() {
                   </thead>
                   <tbody>
                     {albums.map((album) => (
-                      <tr key={album.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group">
+                      <tr
+                        key={album.id}
+                        onClick={() => handleManageTracks(album)}
+                        className="border-b border-white/[0.03] hover:bg-white/[0.04] transition-colors group cursor-pointer"
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
                             {album.cover_url ? (
@@ -459,9 +563,16 @@ export default function AdminMusica() {
                             )}
                             <div className="min-w-0">
                               <p className="font-medium text-white/70 truncate max-w-[200px] group-hover:text-white/90 transition-colors">{album.title}</p>
-                              {album.description && (
-                                <p className="text-[10px] text-white/20 truncate max-w-[200px] mt-0.5">{album.description}</p>
-                              )}
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {album.description && (
+                                  <p className="text-[10px] text-white/20 truncate max-w-[160px]">{album.description}</p>
+                                )}
+                                {albumTrackCounts[album.id] !== undefined && (
+                                  <span className="text-[10px] text-white/30 shrink-0">
+                                    {albumTrackCounts[album.id]} {albumTrackCounts[album.id] === 1 ? 'track' : 'tracks'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -470,13 +581,7 @@ export default function AdminMusica() {
                         </td>
                         <td className="px-3 py-3 text-white/30 hidden sm:table-cell">{album.release_year}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => handleManageTracks(album)}
-                              className="px-2.5 py-1 text-[10px] font-medium rounded-md bg-white/[0.06] text-white/50 hover:bg-white/[0.1] hover:text-white/70 transition-all cursor-pointer"
-                            >
-                              Canciones
-                            </button>
+                          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => handleEditAlbum(album)}
                               className="p-1.5 rounded-md text-white/25 hover:bg-white/[0.06] hover:text-white/50 transition-all cursor-pointer"
@@ -503,7 +608,7 @@ export default function AdminMusica() {
 
       {view === 'album-form' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-[#111] border border-white/[0.08] rounded-xl p-6 w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
+          <div className="bg-[#111] border border-white/[0.08] rounded-xl p-6 w-full max-w-4xl shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
               <h2 className="text-lg font-bold tracking-tight text-white/90">
                 {selectedAlbum ? 'Editar Lanzamiento' : 'Nuevo Lanzamiento'}
@@ -629,128 +734,145 @@ export default function AdminMusica() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
 
-      {view === 'tracks-editor' && selectedAlbum && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setView('list')} className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all cursor-pointer">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white/90">Canciones</h1>
-              <p className="text-white/35 text-sm mt-0.5">
-                Lanzamiento: <span className="text-white/60 font-medium">{selectedAlbum.title}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3 space-y-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wider">Lista de Reproducción</h3>
-                <span className="text-[10px] bg-white/[0.06] text-white/40 px-2 py-0.5 rounded-full font-medium">{tracks.length}</span>
-              </div>
-
-              {loadingTracks ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 text-white/30 animate-spin" />
+            {selectedAlbum && (
+              <div className="pt-5 border-t border-white/[0.06] space-y-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-white/60">Canciones</h3>
+                  <span className="text-[10px] bg-white/[0.06] text-white/40 px-2 py-0.5 rounded-full font-medium">{tracks.length}</span>
                 </div>
-              ) : tracks.length === 0 ? (
-                <div className="text-center py-12 rounded-xl border border-dashed border-white/[0.08]">
-                  <Music className="w-8 h-8 text-white/10 mx-auto mb-2" />
-                  <p className="text-xs text-white/25">Sin pistas de audio. Carga una canción desde el panel derecho.</p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden divide-y divide-white/[0.04]">
-                  {tracks.map((track) => (
-                    <div key={track.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-[10px] font-bold text-white/20 w-4 text-right tabular-nums">
-                          {track.track_order}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-white/60 truncate group-hover:text-white/80 transition-colors">{track.title}</p>
-                          <span className="text-[10px] text-white/20">
-                            {formatDuration(track.duration_seconds)}
-                          </span>
-                        </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                  <div className="lg:col-span-3 space-y-3">
+                    {loadingTracks ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-5 h-5 text-white/30 animate-spin" />
                       </div>
-                      <button
-                        onClick={() => handleDeleteTrack(track.id)}
-                        className="p-1.5 rounded-md text-white/15 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    ) : tracks.length === 0 && pendingTracks.length === 0 ? (
+                      <div className="text-center py-12 rounded-xl border border-dashed border-white/[0.08]">
+                        <Music className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                        <p className="text-xs text-white/25">Sin pistas de audio. Agregá archivos desde el panel derecho.</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden divide-y divide-white/[0.04]">
+                        {tracks.map((track, idx) => (
+                          <div key={track.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-[10px] font-bold text-white/20 w-4 text-right tabular-nums">
+                                {track.track_order}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-white/60 truncate group-hover:text-white/80 transition-colors">{track.title}</p>
+                                <span className="text-[10px] text-white/20">
+                                  {formatDuration(track.duration_seconds)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleReorderTrack(track.id, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 rounded text-white/15 hover:bg-white/[0.06] hover:text-white/40 transition-all cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                              >
+                                <ArrowUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleReorderTrack(track.id, 'down')}
+                                disabled={idx === tracks.length - 1}
+                                className="p-1 rounded text-white/15 hover:bg-white/[0.06] hover:text-white/40 transition-all cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                              >
+                                <ArrowDown className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTrack(track.id)}
+                                className="p-1.5 rounded-md text-white/15 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="lg:col-span-2 space-y-3">
+                    <h4 className="text-xs font-semibold text-white/30 uppercase tracking-wider">Agregar Canciones</h4>
+
+                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                      <FileUploadZone
+                        accept="audio/mp3,audio/mpeg"
+                        type="audio"
+                        selectedFile={null}
+                        onFileSelect={() => {}}
+                        onFilesSelect={handleAddPendingTracks}
+                        multiple
+                        placeholderText="Haz clic o arrastrá archivos de audio"
+                        helperText="Podés seleccionar varios archivos MP3 a la vez."
+                      />
+
+                      {pendingTracks.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">
+                            Cola de carga ({pendingTracks.length} {pendingTracks.length === 1 ? 'archivo' : 'archivos'})
+                          </p>
+                          <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg bg-white/[0.02] p-2">
+                            {pendingTracks.map((pt, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs">
+                                <span className="text-white/20 w-4 text-right tabular-nums shrink-0">{pt.order}</span>
+                                <input
+                                  type="text"
+                                  value={pt.title}
+                                  onChange={(e) => handlePendingTrackTitleChange(i, e.target.value)}
+                                  className="flex-1 min-w-0 px-2 py-1 bg-white/[0.04] border border-white/[0.08] rounded text-white/70 text-xs focus:outline-none focus:border-white/20"
+                                />
+                                <button
+                                  onClick={() => handleRemovePendingTrack(i)}
+                                  className="p-1 rounded text-white/15 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer shrink-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={handleUploadPendingTracks}
+                            disabled={uploadingTracks}
+                            className="w-full py-2 text-xs font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                          >
+                            {uploadingTracks ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Subiendo {uploadProgress.current}/{uploadProgress.total}...
+                              </>
+                            ) : (
+                              <>
+                                <Music className="w-3.5 h-3.5" />
+                                Subir {pendingTracks.length} {pendingTracks.length === 1 ? 'canción' : 'canciones'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="lg:col-span-2 space-y-3">
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wider">Cargar Nueva Canción</h3>
-              <form onSubmit={handleSaveTrack} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white/50">Título de la Pista</label>
-                  <input
-                    type="text"
-                    value={newTrackTitle}
-                    onChange={(e) => setNewTrackTitle(e.target.value)}
-                    placeholder="Ej: Solo en la Noche"
-                    required
-                    className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white/50">Número de Orden</label>
-                  <input
-                    type="number"
-                    value={newTrackOrder}
-                    onChange={(e) => setNewTrackOrder(parseInt(e.target.value) || 1)}
-                    min={1}
-                    required
-                    className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/70 focus:outline-none focus:border-white/20 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-white/50 block">Archivo de Audio (MP3)</label>
-                  <FileUploadZone
-                    accept="audio/mp3,audio/mpeg"
-                    type="audio"
-                    selectedFile={newTrackAudioFile}
-                    onFileSelect={(file) => setNewTrackAudioFile(file)}
-                    placeholderText="Haz clic para seleccionar o arrastra el archivo MP3"
-                    helperText="Solo se admiten archivos MP3. La duración se detectará automáticamente."
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2 text-xs font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                  disabled={savingTrack}
-                >
-                  {savingTrack ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Subiendo archivo a R2...
-                    </>
-                  ) : (
-                    <>
-                      <Music className="w-3.5 h-3.5" />
-                      Añadir a Disco
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
+            {!selectedAlbum && (
+              <div className="pt-5 border-t border-white/[0.06]">
+                <p className="text-xs text-white/30 text-center py-4">
+                  Guardá el lanzamiento para poder agregar canciones.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+
     </div>
   );
 }

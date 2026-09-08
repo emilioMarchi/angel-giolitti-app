@@ -6,22 +6,26 @@ import { Upload, FileText, Image as ImageIcon, Music } from 'lucide-react';
 interface FileUploadZoneProps {
   accept: string;
   onFileSelect: (file: File | null) => void;
+  onFilesSelect?: (files: File[]) => void;
   selectedFile: File | null;
   placeholderText: string;
   helperText?: string;
   previewUrl?: string;
   className?: string;
   type?: 'image' | 'audio' | 'document';
+  multiple?: boolean;
 }
 
 export default function FileUploadZone({
   accept,
   onFileSelect,
+  onFilesSelect,
   selectedFile,
   placeholderText,
   helperText,
   className = '',
   type = 'image',
+  multiple = false,
 }: FileUploadZoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,19 +45,32 @@ export default function FileUploadZone({
     e.stopPropagation();
     setIsDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (accept.includes('image') && !droppedFile.type.startsWith('image/')) return;
-      if (accept.includes('audio') && !droppedFile.type.startsWith('audio/')) return;
-      if (accept.includes('application/pdf') && droppedFile.type !== 'application/pdf') return;
-      onFileSelect(droppedFile);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      const validFiles = files.filter((file) => {
+        if (accept.includes('image') && !file.type.startsWith('image/')) return false;
+        if (accept.includes('audio') && !file.type.startsWith('audio/')) return false;
+        if (accept.includes('application/pdf') && file.type !== 'application/pdf') return false;
+        return true;
+      });
+
+      if (multiple && onFilesSelect) {
+        onFilesSelect(validFiles);
+      } else if (validFiles[0]) {
+        onFileSelect(validFiles[0]);
+      }
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onFileSelect(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      if (multiple && onFilesSelect) {
+        onFilesSelect(files);
+      } else if (files[0]) {
+        onFileSelect(files[0]);
+      }
     }
   };
 
@@ -89,6 +106,7 @@ export default function FileUploadZone({
         ref={fileInputRef}
         type="file"
         accept={accept}
+        multiple={multiple}
         onChange={handleChange}
         className="hidden"
       />

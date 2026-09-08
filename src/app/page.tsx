@@ -36,6 +36,9 @@ interface EventDB {
   location_name: string;
   address_city: string;
   event_date: string;
+  flyer_image_url: string | null;
+  ticket_price: number | null;
+  ticket_url: string | null;
   status: string;
 }
 
@@ -74,6 +77,15 @@ function formatEventDate(isoString: string): { day: string; month: string } {
     day: d.toLocaleDateString('es-ES', { day: '2-digit' }),
     month: d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase(),
   };
+}
+
+function formatEventTime(isoString: string): string {
+  return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatPrice(price: number | null): string | null {
+  if (price == null) return null;
+  return price.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: price % 1 === 0 ? 0 : 2 });
 }
 
 export default function HomePage() {
@@ -148,8 +160,7 @@ export default function HomePage() {
         // 3. Próximos 3 eventos
         const { data: eventsData } = await supabase
           .from('events')
-          .select('id, title, slug, location_name, address_city, event_date, status')
-          .eq('status', 'upcoming')
+          .select('id, title, slug, location_name, address_city, event_date, flyer_image_url, ticket_price, ticket_url')
           .order('event_date', { ascending: true })
           .limit(3);
 
@@ -467,17 +478,34 @@ export default function HomePage() {
           <div className="events-list">
             {upcomingEvents.map((event) => {
               const { day, month } = formatEventDate(event.event_date);
+              const time = formatEventTime(event.event_date);
+              const price = formatPrice(event.ticket_price);
               return (
-                <Link key={event.id} href={`/eventos?event=${event.id}`} className="event-row">
-                  <div className="event-date-badge">
-                    <span className="event-date-day">{day}</span>
-                    <span className="event-date-month">{month}</span>
+                <Link key={event.id} href={`/eventos/${event.slug}`} className="event-row">
+                  <div className="event-flyer-thumb">
+                    {event.flyer_image_url ? (
+                      <img src={getR2Url(event.flyer_image_url)} alt={event.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                        <CalendarDays className="h-6 w-6 text-muted-foreground/40" />
+                      </div>
+                    )}
                   </div>
                   <div className="event-info">
                     <h3 className="event-title">{event.title}</h3>
                     <p className="event-location">
                       <CalendarDays className="h-3 w-3" />
                       {event.location_name} · {event.address_city}
+                    </p>
+                    <p className="event-meta">
+                      <span className="flex items-center gap-1">
+                        {day} {month} · {time} hs
+                      </span>
+                      {price && (
+                        <span className="flex items-center gap-1 text-primary">
+                          {price}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="event-action">
