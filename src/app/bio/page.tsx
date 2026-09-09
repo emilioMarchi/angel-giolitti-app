@@ -460,7 +460,7 @@ export default function BioPage() {
 
         {/* Footer */}
         <footer className="pt-8 border-t border-white/10 text-center text-muted-foreground text-sm">
-          <p>Ángel Giolitti — Música, proyectos & agenda</p>
+          <p>Ángel Giolitti — Música, Proyectos y Agenda</p>
           <p className="mt-1">© {new Date().getFullYear()} Todos los derechos reservados.</p>
         </footer>
       </div>

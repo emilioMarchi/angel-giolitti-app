@@ -24,7 +24,7 @@ const ogImage = "/foto-portada-1.jpeg";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Ángel Giolitti | Música, proyectos & agenda",
+    default: "Ángel Giolitti | Música, Proyectos y Agenda",
     template: "%s | Ángel Giolitti",
   },
   description: "Explora la música, proyectos y agenda de Ángel Giolitti.",
@@ -50,8 +50,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_AR",
     url: siteUrl,
-    siteName: "Ángel Giolitti | Música, proyectos & agenda",
-    title: "Ángel Giolitti | Música, proyectos & agenda",
+    siteName: "Ángel Giolitti | Música, Proyectos y Agenda",
+    title: "Ángel Giolitti | Música, Proyectos y Agenda",
     description: "Explora la música, proyectos y agenda de Ángel Giolitti. Reproductor continuo, discografía, galerías y eventos.",
     images: [
       {
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ángel Giolitti | Música, proyectos & agenda",
+    title: "Ángel Giolitti | Música, Proyectos y Agenda",
     description: "Explora la música, proyectos y agenda de Ángel Giolitti.",
     images: [ogImage],
     creator: "@angelgiolitti",

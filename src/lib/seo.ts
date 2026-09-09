@@ -15,7 +15,7 @@ const deployedUrl =
 
 export const siteUrl = deployedUrl || 'https://angelgiolitti.com.ar';
 export const defaultOgImage = getR2Url('images/gallery/handangel/photo-2.webp');
-export const siteName = 'Ángel Giolitti | Música, proyectos & agenda';
+export const siteName = 'Ángel Giolitti | Música, Proyectos y Agenda';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey =
