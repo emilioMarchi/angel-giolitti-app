@@ -275,10 +275,10 @@ export default function HomePage() {
               />
             </div>
             <div className="artist-hero-info">
-              <div className="artist-verified">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              </div>
-              <h1 className="artist-name">Ángel Giolitti</h1>
+              <h1 className="artist-name flex items-center gap-2">
+                Ángel Giolitti
+                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+              </h1>
               <p className="artist-meta">
                 <span className="artist-listeners">
                   <Users className="h-4 w-4" />
