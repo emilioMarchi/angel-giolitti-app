@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Ángel Giolitti | Música, Proyectos y Agenda",
     title: "Ángel Giolitti | Música, Proyectos y Agenda",
-    description: "Explora la música, proyectos y agenda de Ángel Giolitti. Reproductor continuo, discografía, galerías y eventos.",
+    description: "Explora la música, proyectos y agenda de Ángel Giolitti. Discografía, galerías y eventos.",
     images: [
       {
         url: ogImage,
