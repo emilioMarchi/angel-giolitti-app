@@ -24,10 +24,10 @@ const ogImage = "/foto-portada-1.jpeg";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Ángel Giolitti | Plataforma Oficial",
+    default: "Ángel Giolitti | Música, proyectos & agenda",
     template: "%s | Ángel Giolitti",
   },
-  description: "Explora la música, proyectos y agenda de Ángel Giolitti. Reproductor continuo, discografía, galerías y eventos.",
+  description: "Explora la música, proyectos y agenda de Ángel Giolitti.",
   keywords: ["Ángel Giolitti", "música electrónica", "productor", "compositor", "Handangel", "discografía", "eventos"],
   authors: [{ name: "Ángel Giolitti" }],
   creator: "Ángel Giolitti",
