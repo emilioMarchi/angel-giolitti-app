@@ -15,7 +15,7 @@ const deployedUrl =
 
 export const siteUrl = deployedUrl || 'https://angelgiolitti.com.ar';
 export const defaultOgImage = getR2Url('images/gallery/handangel/photo-2.webp');
-export const siteName = 'Ángel Giolitti | Plataforma Oficial';
+export const siteName = 'Ángel Giolitti | Música, proyectos & agenda';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey =
@@ -112,7 +112,7 @@ export const getAlbumMeta = cache(async (slug: string): Promise<EntityMeta> => {
 
     const base =
       data.description?.trim() ||
-      `Escuchá "${data.title.trim()}" de Ángel Giolitti completo en la plataforma oficial.`;
+      `Escuchá "${data.title.trim()}" de Ángel Giolitti.`;
 
     return {
       found: true,

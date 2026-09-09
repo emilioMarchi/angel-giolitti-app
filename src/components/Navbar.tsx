@@ -178,7 +178,7 @@ export default function Navbar() {
           {/* Footer del sidebar móvil */}
           <div className="p-4 border-t border-border/30">
             <p className="text-xs text-muted-foreground text-center">
-              Ángel Giolitti — Plataforma Oficial
+              Ángel Giolitti — Música, proyectos & agenda
             </p>
           </div>
         </aside>
