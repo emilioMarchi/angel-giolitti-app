@@ -13,20 +13,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
-
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com';
-
-  if (!user.email || user.email !== adminEmail) {
-    return NextResponse.json({ error: 'Prohibido: solo el administrador puede subir archivos' }, { status: 403 });
-  }
-
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com';
+
+    if (!user.email || user.email !== adminEmail) {
+      return NextResponse.json({ error: 'Prohibido: solo el administrador puede subir archivos' }, { status: 403 });
+    }
+
     const { filename, contentType, folder } = await request.json();
 
     if (!filename || !contentType) {

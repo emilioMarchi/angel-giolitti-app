@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Play, 
+  Pause,
   Disc3, 
   Music2, 
   Clock, 
@@ -270,18 +271,28 @@ export default function MusicaPage() {
         </div>
 
         {/* Barra de controles rápidos */}
-        <div className="flex items-center gap-6 mb-8">
-          <button 
-            onClick={() => handlePlayCollection(tracks)}
-            className="w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center hover:scale-105 transition-all shadow-lg active:scale-95"
-            aria-label="Reproducir colección"
-          >
-            <Play className="h-6 w-6 translate-x-[1px]" fill="currentColor" />
-          </button>
-          <button className="text-muted-foreground hover:text-white transition-colors" aria-label="Favorito">
-            <Heart className="h-8 w-8" />
-          </button>
-        </div>
+        {(() => {
+          const isCollectionActive = tracks.some((t) => t.id === currentTrack?.id);
+          const isCollectionPlaying = isCollectionActive && isPlaying;
+          return (
+            <div className="flex items-center gap-6 mb-8">
+              <button 
+                onClick={() => isCollectionActive ? togglePlay() : handlePlayCollection(tracks)}
+                className="w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center hover:scale-105 transition-all shadow-lg active:scale-95"
+                aria-label={isCollectionPlaying ? "Pausar colección" : "Reproducir colección"}
+              >
+                {isCollectionPlaying ? (
+                  <Pause className="h-6 w-6" fill="currentColor" />
+                ) : (
+                  <Play className="h-6 w-6 translate-x-[1px]" fill="currentColor" />
+                )}
+              </button>
+              <button className="text-muted-foreground hover:text-white transition-colors" aria-label="Favorito">
+                <Heart className="h-8 w-8" />
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Tabla de tracks */}
         <div className="track-list-table">
@@ -296,21 +307,26 @@ export default function MusicaPage() {
             {tracks.length > 0 ? (
               tracks.map((track, i) => {
                 const isCurrent = currentTrack?.id === track.id;
+                const isCurrentPlaying = isCurrent && isPlaying;
                 return (
                   <div
                     key={track.id}
                     onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track, tracks)}
-                    className={`track-row grid grid-cols-[50px_40px_1fr_80px] items-center px-4 py-3 rounded-md hover:bg-white/10 transition-colors cursor-pointer ${isCurrent ? 'bg-white/5' : ''}`}
+                    className={`track-row grid grid-cols-[50px_40px_1fr_80px] items-center px-4 py-3 rounded-md hover:bg-white/10 transition-colors cursor-pointer ${isCurrent ? 'bg-white/5 text-primary' : ''}`}
                   >
                     <div className="flex items-center">
-                      {isCurrent && isPlaying ? (
+                      {isCurrentPlaying ? (
                         <div className="track-eq">
                           <span /><span /><span /><span />
                         </div>
                       ) : (
-                        <span className="track-index text-muted-foreground text-sm font-medium">{i + 1}</span>
+                        <span className={`track-index text-sm font-medium ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>{i + 1}</span>
                       )}
-                      <Play className="track-play-icon h-4 w-4 text-white" fill="currentColor" />
+                      {isCurrentPlaying ? (
+                        <Pause className="track-play-icon h-4 w-4 text-white" fill="currentColor" />
+                      ) : (
+                        <Play className="track-play-icon h-4 w-4 text-white" fill="currentColor" />
+                      )}
                     </div>
 
                     <div className="w-10 h-10 rounded overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">

@@ -28,11 +28,20 @@ export async function updateSession(request: NextRequest) {
   )
 
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    const { data: { user } } = await supabase.auth.getUser()
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com'
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com'
 
-    if (user && user.email !== adminEmail) {
-      return NextResponse.redirect(new URL('/', request.url))
+      if (error || (user && user.email !== adminEmail)) {
+        if (request.nextUrl.pathname !== '/admin') {
+          return NextResponse.redirect(new URL('/admin', request.url))
+        }
+      }
+    } catch (err) {
+      // Ignorar error de refresh token inválido o expirado
+      if (request.nextUrl.pathname !== '/admin') {
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
     }
   }
 

@@ -52,19 +52,31 @@ interface PlayerState {
   toggleRepeat: () => void;
 }
 
-function buildShuffleOrder(length: number, excludeIndex?: number): number[] {
+function buildShuffleOrder(length: number, firstIndex?: number, excludeLastIndex?: number): number[] {
+  if (length <= 0) return [];
+  if (length === 1) return [0];
+
   const indices = Array.from({ length }, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
+  let available = indices;
+
+  if (firstIndex !== undefined && firstIndex >= 0 && firstIndex < length) {
+    available = indices.filter((i) => i !== firstIndex);
+  }
+
+  for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
+    [available[i], available[j]] = [available[j], available[i]];
   }
-  if (excludeIndex !== undefined && excludeIndex >= 0 && excludeIndex < length) {
-    const idx = indices.indexOf(excludeIndex);
-    if (idx > 0) {
-      [indices[0], indices[idx]] = [indices[idx], indices[0]];
-    }
+
+  if (excludeLastIndex !== undefined && available.length > 1 && available[0] === excludeLastIndex) {
+    [available[0], available[1]] = [available[1], available[0]];
   }
-  return indices;
+
+  if (firstIndex !== undefined && firstIndex >= 0 && firstIndex < length) {
+    return [firstIndex, ...available];
+  }
+
+  return available;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -87,15 +99,25 @@ export const usePlayerStore = create<PlayerState>()(
       shufflePosition: -1,
 
       playTrack: (track, newQueue) => {
-        const { isShuffle } = get();
-        let activeQueue = get().queue;
-        if (newQueue) {
-          activeQueue = newQueue;
+        const { isShuffle, popularTracks } = get();
+        let activeQueue = newQueue && newQueue.length > 0 ? newQueue : get().queue;
+
+        if (activeQueue.length <= 1 && popularTracks.length > 0) {
+          if (popularTracks.some((t) => t.id === track.id)) {
+            activeQueue = popularTracks;
+          } else {
+            activeQueue = [track, ...popularTracks.filter((t) => t.id !== track.id)];
+          }
         } else if (!activeQueue.some((t) => t.id === track.id)) {
           activeQueue = [...activeQueue, track];
         }
 
-        const index = activeQueue.findIndex((t) => t.id === track.id);
+        let index = activeQueue.findIndex((t) => t.id === track.id);
+        if (index === -1) {
+          activeQueue = [track, ...activeQueue];
+          index = 0;
+        }
+
         const shuffleOrder = isShuffle ? buildShuffleOrder(activeQueue.length, index) : [];
         const shufflePosition = isShuffle ? 0 : -1;
 
@@ -128,13 +150,57 @@ export const usePlayerStore = create<PlayerState>()(
         });
       },
 
-      togglePlay: () => set((state) => ({ isPlaying: state.currentTrack ? !state.isPlaying : false })),
+      togglePlay: () => set((state) => {
+        if (!state.currentTrack) {
+          if (state.queue.length > 0) {
+            return { currentTrack: state.queue[0], currentIndex: 0, isPlaying: true, progress: 0 };
+          }
+          if (state.popularTracks.length > 0) {
+            return {
+              queue: state.popularTracks,
+              currentTrack: state.popularTracks[0],
+              currentIndex: 0,
+              isPlaying: true,
+              progress: 0,
+            };
+          }
+          return { isPlaying: false };
+        }
+
+        let activeQueue = state.queue;
+        if (activeQueue.length <= 1 && state.popularTracks.length > 1) {
+          if (state.popularTracks.some((t) => t.id === state.currentTrack!.id)) {
+            activeQueue = state.popularTracks;
+          } else {
+            activeQueue = [state.currentTrack!, ...state.popularTracks.filter((t) => t.id !== state.currentTrack!.id)];
+          }
+          const index = activeQueue.findIndex((t) => t.id === state.currentTrack!.id);
+          return {
+            queue: activeQueue,
+            currentIndex: index >= 0 ? index : 0,
+            isPlaying: !state.isPlaying,
+          };
+        }
+
+        return { isPlaying: !state.isPlaying };
+      }),
 
       setPlaying: (isPlaying) => set({ isPlaying }),
 
       nextTrack: () => {
-        const { queue, currentIndex, isShuffle, repeatMode, shuffleOrder, shufflePosition } = get();
-        if (queue.length === 0) return;
+        const { queue, currentIndex, isShuffle, repeatMode, shuffleOrder, shufflePosition, popularTracks, currentTrack } = get();
+        let activeQueue = queue;
+        if (activeQueue.length <= 1 && popularTracks.length > 1) {
+          if (currentTrack && popularTracks.some((t) => t.id === currentTrack.id)) {
+            activeQueue = popularTracks;
+          } else if (currentTrack) {
+            activeQueue = [currentTrack, ...popularTracks.filter((t) => t.id !== currentTrack.id)];
+          } else {
+            activeQueue = popularTracks;
+          }
+        }
+
+        if (activeQueue.length === 0) return;
 
         if (repeatMode === 'one') {
           set({ progress: 0, isPlaying: true });
@@ -144,47 +210,69 @@ export const usePlayerStore = create<PlayerState>()(
         let nextIndex: number;
         let newShufflePosition = shufflePosition;
 
-        if (isShuffle && shuffleOrder.length > 0) {
-          newShufflePosition = shufflePosition + 1;
-          if (newShufflePosition >= shuffleOrder.length) {
-            if (repeatMode === 'all') {
-              const newOrder = buildShuffleOrder(queue.length, currentIndex);
-              newShufflePosition = 0;
-              nextIndex = newOrder[0];
-              set({
-                shuffleOrder: newOrder,
-                shufflePosition: newShufflePosition,
-                currentIndex: nextIndex,
-                currentTrack: queue[nextIndex],
-                progress: 0,
-                isPlaying: true,
-              });
-              return;
-            } else {
-              return;
-            }
+        if (isShuffle) {
+          let currentOrder = shuffleOrder;
+          if (currentOrder.length !== activeQueue.length) {
+            currentOrder = buildShuffleOrder(activeQueue.length, currentIndex);
           }
-          nextIndex = shuffleOrder[newShufflePosition];
-          set({
-            shufflePosition: newShufflePosition,
-            currentIndex: nextIndex,
-            currentTrack: queue[nextIndex],
-            progress: 0,
-            isPlaying: true,
-          });
+
+          newShufflePosition = shufflePosition + 1;
+          if (newShufflePosition >= currentOrder.length) {
+            const extraTracks = popularTracks.filter((t) => !activeQueue.some((q) => q.id === t.id));
+            const expandedQueue = extraTracks.length > 0 ? [...activeQueue, ...extraTracks] : activeQueue;
+            const lastPlayedIdx = expandedQueue.findIndex((t) => t.id === currentTrack?.id);
+            const newOrder = buildShuffleOrder(expandedQueue.length, undefined, lastPlayedIdx >= 0 ? lastPlayedIdx : undefined);
+            nextIndex = newOrder[0];
+            set({
+              queue: expandedQueue,
+              shuffleOrder: newOrder,
+              shufflePosition: 0,
+              currentIndex: nextIndex,
+              currentTrack: expandedQueue[nextIndex],
+              progress: 0,
+              isPlaying: true,
+            });
+            return;
+          } else {
+            nextIndex = currentOrder[newShufflePosition];
+            set({
+              queue: activeQueue,
+              shuffleOrder: currentOrder,
+              shufflePosition: newShufflePosition,
+              currentIndex: nextIndex,
+              currentTrack: activeQueue[nextIndex],
+              progress: 0,
+              isPlaying: true,
+            });
+            return;
+          }
         } else {
-          if (currentIndex >= queue.length - 1) {
+          if (currentIndex >= activeQueue.length - 1 || currentIndex < 0) {
             if (repeatMode === 'all') {
               nextIndex = 0;
             } else {
-              return;
+              const extraTracks = popularTracks.filter((t) => !activeQueue.some((q) => q.id === t.id));
+              if (extraTracks.length > 0) {
+                const expandedQueue = [...activeQueue, ...extraTracks];
+                nextIndex = activeQueue.length;
+                set({
+                  queue: expandedQueue,
+                  currentIndex: nextIndex,
+                  currentTrack: expandedQueue[nextIndex],
+                  progress: 0,
+                  isPlaying: true,
+                });
+                return;
+              }
+              nextIndex = 0;
             }
           } else {
             nextIndex = currentIndex + 1;
           }
           set({
+            queue: activeQueue,
             currentIndex: nextIndex,
-            currentTrack: queue[nextIndex],
+            currentTrack: activeQueue[nextIndex],
             progress: 0,
             isPlaying: true,
           });
@@ -192,8 +280,9 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       previousTrack: () => {
-        const { queue, currentIndex, progress, isShuffle, repeatMode, shuffleOrder, shufflePosition } = get();
-        if (queue.length === 0) return;
+        const { queue, currentIndex, progress, isShuffle, repeatMode, shuffleOrder, shufflePosition, popularTracks } = get();
+        let activeQueue = queue.length > 0 ? queue : popularTracks;
+        if (activeQueue.length === 0) return;
 
         if (progress > 3) {
           set({ progress: 0 });
@@ -201,47 +290,25 @@ export const usePlayerStore = create<PlayerState>()(
         }
 
         if (isShuffle && shuffleOrder.length > 0) {
-          if (shufflePosition > 0) {
-            const newShufflePosition = shufflePosition - 1;
-            const prevIndex = shuffleOrder[newShufflePosition];
-            set({
-              shufflePosition: newShufflePosition,
-              currentIndex: prevIndex,
-              currentTrack: queue[prevIndex],
-              progress: 0,
-              isPlaying: true,
-            });
-          } else if (repeatMode === 'all') {
-            const newShufflePosition = shuffleOrder.length - 1;
-            const prevIndex = shuffleOrder[newShufflePosition];
-            set({
-              shufflePosition: newShufflePosition,
-              currentIndex: prevIndex,
-              currentTrack: queue[prevIndex],
-              progress: 0,
-              isPlaying: true,
-            });
-          }
+          const newShufflePosition = shufflePosition > 0 ? shufflePosition - 1 : shuffleOrder.length - 1;
+          const prevIndex = shuffleOrder[newShufflePosition];
+          set({
+            queue: activeQueue,
+            shufflePosition: newShufflePosition,
+            currentIndex: prevIndex,
+            currentTrack: activeQueue[prevIndex],
+            progress: 0,
+            isPlaying: true,
+          });
         } else {
-          if (currentIndex <= 0) {
-            if (repeatMode === 'all') {
-              const prevIndex = queue.length - 1;
-              set({
-                currentIndex: prevIndex,
-                currentTrack: queue[prevIndex],
-                progress: 0,
-                isPlaying: true,
-              });
-            }
-          } else {
-            const prevIndex = currentIndex - 1;
-            set({
-              currentIndex: prevIndex,
-              currentTrack: queue[prevIndex],
-              progress: 0,
-              isPlaying: true,
-            });
-          }
+          const prevIndex = currentIndex <= 0 ? activeQueue.length - 1 : currentIndex - 1;
+          set({
+            queue: activeQueue,
+            currentIndex: prevIndex,
+            currentTrack: activeQueue[prevIndex],
+            progress: 0,
+            isPlaying: true,
+          });
         }
       },
 
@@ -264,17 +331,22 @@ export const usePlayerStore = create<PlayerState>()(
         shufflePosition: -1,
       }),
 
-      setTrack: (track: Track, newQueue?: Track[]) => set({
+      setTrack: (track: Track, newQueue?: Track[]) => set((state) => ({
         currentTrack: track,
-        queue: newQueue || [track],
-        currentIndex: 0,
+        queue: newQueue && newQueue.length > 0 ? newQueue : (state.queue.length > 0 ? state.queue : [track]),
+        currentIndex: (newQueue || state.queue).findIndex((t) => t.id === track.id) !== -1 ? (newQueue || state.queue).findIndex((t) => t.id === track.id) : 0,
         isPlaying: false,
         progress: 0,
         shuffleOrder: [],
         shufflePosition: -1,
-      }),
+      })),
 
-      setPopularTracks: (tracks) => set({ popularTracks: tracks }),
+      setPopularTracks: (tracks) => set((state) => ({
+        popularTracks: tracks,
+        queue: state.queue.length === 0 ? tracks : state.queue,
+        currentIndex: state.queue.length === 0 ? 0 : state.currentIndex,
+        currentTrack: state.currentTrack || (tracks.length > 0 ? tracks[0] : null),
+      })),
 
       addToQueue: (track) => {
         const { queue } = get();

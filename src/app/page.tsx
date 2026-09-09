@@ -228,7 +228,11 @@ export default function HomePage() {
   };
 
   const handlePlayTrack = (track: Track) => {
-    playTrack(track, popularTracks);
+    if (currentTrack?.id === track.id) {
+      togglePlay();
+    } else {
+      playTrack(track, popularTracks);
+    }
   };
 
   return (
@@ -273,7 +277,6 @@ export default function HomePage() {
             <div className="artist-hero-info">
               <div className="artist-verified">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <span>Artista verificado</span>
               </div>
               <h1 className="artist-name">Ángel Giolitti</h1>
               <p className="artist-meta">
@@ -297,8 +300,11 @@ export default function HomePage() {
               <Play className="h-6 w-6" fill="currentColor" />
             )}
           </button>
-          <button onClick={toggleShuffle} className={`artist-shuffle-btn ${isShuffle ? 'text-primary' : ''}`} aria-label="Aleatorio">
+          <button onClick={toggleShuffle} className={`artist-shuffle-btn relative ${isShuffle ? 'text-primary' : ''}`} aria-label="Aleatorio" aria-pressed={isShuffle}>
             <Shuffle className="h-5 w-5" />
+            {isShuffle && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full shadow-sm" />
+            )}
           </button>
           <button className="artist-follow-btn">
             Seguir
@@ -363,22 +369,27 @@ export default function HomePage() {
             <>
               {(showMorePopular ? popularTracks.slice(0, 10) : popularTracks.slice(0, 5)).map((track, i) => {
                 const isCurrent = currentTrack?.id === track.id;
+                const isCurrentPlaying = isCurrent && isPlaying;
                 const displayIndex = i + 1;
                 return (
                   <div
                     key={track.id}
                     className={`track-row ${isCurrent ? 'track-row--active' : ''}`}
-                    onClick={() => isCurrent ? togglePlay() : handlePlayTrack(track)}
+                    onClick={() => handlePlayTrack(track)}
                   >
                     <div className="track-row-number">
-                      {isCurrent && isPlaying ? (
+                      {isCurrentPlaying ? (
                         <div className="track-eq">
                           <span /><span /><span /><span />
                         </div>
                       ) : (
-                        <span className="track-index">{displayIndex}</span>
+                        <span className={`track-index ${isCurrent ? 'text-primary font-bold' : ''}`}>{displayIndex}</span>
                       )}
-                      <Play className="track-play-icon" fill="currentColor" />
+                      {isCurrentPlaying ? (
+                        <Pause className="track-play-icon text-primary" fill="currentColor" />
+                      ) : (
+                        <Play className="track-play-icon" fill="currentColor" />
+                      )}
                     </div>
 
                     <div className="track-row-cover">

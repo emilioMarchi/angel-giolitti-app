@@ -220,6 +220,11 @@ export default function ProjectDetailClient() {
   }, [slug]);
 
   const handlePlayTrack = (track: any, album: ProjectAlbum) => {
+    if (currentTrack?.id === track.id) {
+      togglePlay();
+      return;
+    }
+
     const storeTrack: Track = {
       id: track.id,
       album_id: track.album_id,

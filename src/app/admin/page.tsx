@@ -43,15 +43,20 @@ export default function AdminSPA() {
     let active = true;
 
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!active) return;
-      if (user) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (active) setSession(session);
-      } else {
-        setSession(null);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active) return;
+        if (user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (active) setSession(session);
+        } else {
+          setSession(null);
+        }
+      } catch (err) {
+        if (active) setSession(null);
+      } finally {
+        if (active) setCheckingAuth(false);
       }
-      setCheckingAuth(false);
     }
 
     checkAuth();

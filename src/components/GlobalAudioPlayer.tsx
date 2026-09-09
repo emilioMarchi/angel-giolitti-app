@@ -57,46 +57,42 @@ export default function GlobalAudioPlayer() {
     toggleRepeat,
   } = usePlayerStore();
 
-  // Tema por defecto al cargar el sitio
+  // Tema por defecto al cargar el sitio (cargando todas las canciones disponibles como cola)
   useEffect(() => {
-    if (!currentTrack) {
-      const defaultAudioUrl = getR2Url('tracks/handangel/handangel/patio-colibri.mp3');
+    const store = usePlayerStore.getState();
+    supabase
+      .from('tracks')
+      .select('id, album_id, title, audio_url, duration_seconds, track_order, albums(title, cover_url)')
+      .order('track_order', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const allTracks: Track[] = data.map((t: any) => ({
+            id: t.id,
+            album_id: t.album_id,
+            title: t.title,
+            audio_url: t.audio_url,
+            duration_seconds: t.duration_seconds,
+            track_order: t.track_order,
+            album_title: t.albums?.title || '',
+            cover_url: getR2Url(t.albums?.cover_url) || undefined,
+          }));
 
-      supabase
-        .from('tracks')
-        .select('id, album_id, title, audio_url, duration_seconds, track_order, albums(title, cover_url)')
-        .eq('audio_url', defaultAudioUrl)
-        .single()
-        .then(({ data }) => {
-          const store = usePlayerStore.getState();
-          let track: Track;
-          if (data) {
-            const t = data as any;
-            track = {
-              id: t.id,
-              album_id: t.album_id,
-              title: t.title,
-              audio_url: t.audio_url,
-              duration_seconds: t.duration_seconds,
-              track_order: t.track_order,
-              album_title: t.albums?.title || '',
-              cover_url: getR2Url(t.albums?.cover_url) || undefined,
-            };
-          } else {
-            track = {
-              id: 'default-patio-colibri',
-              album_id: null,
-              title: 'Patio Colibrí',
-              audio_url: defaultAudioUrl,
-              duration_seconds: null,
-              track_order: 1,
-              album_title: '',
-              cover_url: undefined,
-            };
+          store.setPopularTracks(allTracks);
+
+          if (!store.currentTrack) {
+            const handangelTracks = allTracks.filter((t) => t.album_title?.toLowerCase().includes('handangel'));
+            const defaultTrack = handangelTracks.length > 0
+              ? handangelTracks.reduce((a, b) => (a.track_order <= b.track_order ? a : b))
+              : allTracks[0];
+            store.setTrack(defaultTrack, allTracks);
+          } else if (store.queue.length <= 1) {
+            const current = store.currentTrack;
+            const index = allTracks.findIndex((t) => t.id === current.id);
+            const queue = index !== -1 ? allTracks : [current, ...allTracks.filter((t) => t.id !== current.id)];
+            store.setTrack(current, queue);
           }
-          store.setTrack(track, [track]);
-        });
-    }
+        }
+      });
   }, []);
 
   // Sincronizar src del audio cuando cambia el track
@@ -222,8 +218,9 @@ export default function GlobalAudioPlayer() {
   );
 
   const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
-  const hasNext = repeatMode === 'all' || repeatMode === 'one' || currentIndex < queue.length - 1;
-  const hasPrev = repeatMode === 'all' || repeatMode === 'one' || currentIndex > 0 || progress > 3;
+  const popularTracks = usePlayerStore((state) => state.popularTracks);
+  const hasNext = queue.length > 0 || popularTracks.length > 0;
+  const hasPrev = queue.length > 0 || popularTracks.length > 0;
   const effectiveVolume = isMuted ? 0 : volume;
 
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
@@ -286,11 +283,14 @@ export default function GlobalAudioPlayer() {
           <div className="player-controls-buttons">
             <button
               onClick={toggleShuffle}
-              className={`player-control-btn ${isShuffle ? 'text-primary' : ''}`}
+              className={`player-control-btn relative ${isShuffle ? 'text-primary' : ''}`}
               aria-label="Aleatorio"
               aria-pressed={isShuffle}
             >
               <Shuffle className="h-4 w-4" />
+              {isShuffle && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-sm" />
+              )}
             </button>
 
             <button

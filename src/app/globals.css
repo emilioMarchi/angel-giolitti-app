@@ -1176,11 +1176,22 @@
   color: var(--muted-foreground);
   cursor: pointer;
   border-radius: 50%;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, filter 0.15s ease;
 }
 
 .player-control-btn:hover {
   color: #ffffff;
+}
+
+.player-control-btn.text-primary,
+.player-control-btn[aria-pressed="true"] {
+  color: var(--primary) !important;
+}
+
+.player-control-btn.text-primary:hover,
+.player-control-btn[aria-pressed="true"]:hover {
+  color: var(--primary) !important;
+  filter: brightness(1.2);
 }
 
 .player-control-btn:disabled {

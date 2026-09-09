@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Search, Music, Disc, FolderGit2, Play, Volume2 } from '@/lib/lucide';
@@ -13,8 +13,13 @@ export default function BuscarPage() {
   const playTrack = usePlayerStore((state) => state.playTrack);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const togglePlay = usePlayerStore((state) => state.togglePlay);
 
   const handlePlay = (track: SearchTrack) => {
+    if (currentTrack?.id === track.id) {
+      togglePlay();
+      return;
+    }
     const storeTrack = {
       id: track.id,
       album_id: track.album_id,
