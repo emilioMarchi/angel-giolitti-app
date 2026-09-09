@@ -44,12 +44,12 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "/",
+    canonical: `${siteUrl}/`,
   },
   openGraph: {
     type: "website",
     locale: "es_AR",
-    url: siteUrl,
+    url: `${siteUrl}/`,
     siteName: "Ángel Giolitti | Música, Proyectos y Agenda",
     title: "Ángel Giolitti | Música, Proyectos y Agenda",
     description: "Explora la música, proyectos y agenda de Ángel Giolitti. Discografía, galerías y eventos.",

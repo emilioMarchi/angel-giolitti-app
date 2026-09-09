@@ -42,14 +42,15 @@ export function getPageMetadata({
   image,
   type = 'website',
 }: PageMetaInput): Metadata {
-  const url = `${siteUrl}${path}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${siteUrl}${normalizedPath}`;
   const imageUrl = image && image.startsWith('http') ? image : image ? getR2Url(image) : defaultOgImage;
 
   return {
     title,
     description,
     alternates: {
-      canonical: path,
+      canonical: url,
     },
     openGraph: {
       title,
