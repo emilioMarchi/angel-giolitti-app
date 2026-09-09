@@ -50,8 +50,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_AR",
     url: siteUrl,
-    siteName: "Ángel Giolitti | Plataforma Oficial",
-    title: "Ángel Giolitti | Plataforma Oficial",
+    siteName: "Ángel Giolitti | Música, proyectos & agenda",
+    title: "Ángel Giolitti | Música, proyectos & agenda",
     description: "Explora la música, proyectos y agenda de Ángel Giolitti. Reproductor continuo, discografía, galerías y eventos.",
     images: [
       {
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ángel Giolitti | Plataforma Oficial",
+    title: "Ángel Giolitti | Música, proyectos & agenda",
     description: "Explora la música, proyectos y agenda de Ángel Giolitti.",
     images: [ogImage],
     creator: "@angelgiolitti",
