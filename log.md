@@ -1,10 +1,6 @@
-## Error Type
-Build Error
 
-## Error Message
-Expected '</', got 'ident'
-
-## Build Output
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
 ./src/components/admin/AdminMusica.tsx:851:20
 Expected '</', got 'ident'
   849 | </div>
@@ -18,14 +14,3 @@ Expected '</', got 'ident'
 Parsing ecmascript source code failed
 
 Import traces:
-  Client Component Browser:
-    ./src/components/admin/AdminMusica.tsx [Client Component Browser]
-    ./src/app/admin/musica/page.tsx [Client Component Browser]
-    ./src/app/admin/musica/page.tsx [Server Component]
-
-  Client Component SSR:
-    ./src/components/admin/AdminMusica.tsx [Client Component SSR]
-    ./src/app/admin/musica/page.tsx [Client Component SSR]
-    ./src/app/admin/musica/page.tsx [Server Component]
-
-Next.js version: 16.2.12 (Turbopack)

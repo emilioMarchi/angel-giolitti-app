@@ -846,7 +846,8 @@ export default function AdminMusica() {
                     </div>
                   </div>
                 </div>
-</div>
+              </div>
+            )}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-white/[0.06]">
                 <button
