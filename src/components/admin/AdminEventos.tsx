@@ -330,8 +330,9 @@ export default function AdminEventos() {
     }
   };
 
-  const upcomingEvents = events.filter(e => e.status === 'upcoming');
-  const pastEvents = events.filter(e => e.status === 'completed');
+  const now = new Date();
+  const upcomingEvents = events.filter(e => e.status === 'upcoming' && new Date(e.event_date) > now);
+  const pastEvents = events.filter(e => e.status === 'completed' || new Date(e.event_date) <= now);
 
   const renderEventTable = (eventList: Event[], dimmed = false) => (
     <div className={`rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden ${dimmed ? 'opacity-60' : ''}`}>

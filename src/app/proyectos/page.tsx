@@ -169,9 +169,9 @@ export default function ProyectosPage() {
             className="group relative overflow-hidden rounded-xl bg-card border border-white/5 hover:bg-card/70 hover:border-primary/30 transition-all duration-300 flex flex-col h-full"
           >
             <div className="aspect-video bg-gradient-to-br from-zinc-800 to-black w-full relative flex items-center justify-center overflow-hidden">
-              {project.cover_image_url ? (
+              {project.profile_image_url ? (
                 <img 
-                  src={project.cover_image_url} 
+                  src={project.profile_image_url} 
                   alt={project.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
