@@ -124,7 +124,7 @@ export default function BioPage() {
             name: dbProfile.full_name || 'Ángel Giolitti',
             bio_short: dbProfile.short_bio || '',
             bio_full: dbProfile.full_bio_markdown || '',
-            avatar_url: getR2Url(dbProfile.avatar_url) || '',
+            avatar_url: getR2Url(dbProfile.secondary_image_url || dbProfile.avatar_url || dbProfile.profile_image_url) || '',
             cover_url: getR2Url(dbProfile.cover_url) || '',
             monthly_listeners: dbProfile.monthly_listeners || 12400,
             location: dbProfile.location || 'Buenos Aires, Argentina',
@@ -247,7 +247,7 @@ export default function BioPage() {
         <section className="mb-8">
           <div className="flex flex-col items-center text-center gap-4">
             <div className="w-36 h-36 rounded-2xl overflow-hidden border-4 border-background shadow-2xl bg-zinc-800 flex-shrink-0">
-              <img src={getR2Url('images/gallery/handangel/photo-7.webp')} alt={profile.name} className="w-full h-full object-cover" />
+              <img src={profile.avatar_url || getR2Url('images/gallery/handangel/photo-7.webp')} alt={profile.name} className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">{profile.name}</h1>

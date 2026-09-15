@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Music, Loader2, AlertCircle, ArrowLeft, Disc3, ArrowUp, ArrowDown } from 'lucide-react';
 import FileUploadZone from './FileUploadZone';
+import Pagination from './Pagination';
 
 interface Album {
   id: string;
@@ -45,6 +46,8 @@ export default function AdminMusica() {
   const [albumTrackCounts, setAlbumTrackCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'list' | 'album-form'>('list');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTitle, setAlbumTitle] = useState('');
@@ -546,7 +549,9 @@ export default function AdminMusica() {
                     </tr>
                   </thead>
                   <tbody>
-                    {albums.map((album) => (
+                    {albums
+                      .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                      .map((album) => (
                       <tr
                         key={album.id}
                         onClick={() => handleManageTracks(album)}
@@ -600,6 +605,15 @@ export default function AdminMusica() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="p-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(albums.length / PAGE_SIZE)}
+                  totalItems={albums.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={page => setCurrentPage(page)}
+                />
               </div>
             </div>
           )}

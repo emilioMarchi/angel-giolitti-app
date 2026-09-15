@@ -21,6 +21,7 @@ import {
   Plus,
   ArrowRight,
   RefreshCw,
+  User,
 } from 'lucide-react';
 
 type TabType = 'dashboard' | 'musica' | 'eventos' | 'proyectos' | 'galeria' | 'bio';
@@ -299,6 +300,33 @@ export default function AdminDashboard({ onNavigate }: { onNavigate?: (tab: TabT
             );
           })}
         </div>
+      </div>
+
+      {/* Cuadro Perfil de Artista */}
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0">
+            <User className="w-6 h-6 text-white/40" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-white/90">Perfil de Artista</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/20">
+                Público
+              </span>
+            </div>
+            <p className="text-xs text-white/40 mt-0.5">
+              Gestiona tu foto de perfil, imágenes del banner (Hero), biografía y redes sociales del sitio principal.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => onNavigate?.('bio')}
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-all cursor-pointer shrink-0"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Editar Perfil & Redes
+        </button>
       </div>
 
       {/* KPIs */}

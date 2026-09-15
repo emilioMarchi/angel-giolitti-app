@@ -157,10 +157,13 @@ export default function HomePage() {
           setDiscography(albumsData as AlbumDB[]);
         }
 
-        // 3. Próximos 3 eventos
+        // 3. Próximos 3 eventos (solo futuros, no cancelados)
+        const now = new Date().toISOString();
         const { data: eventsData } = await supabase
           .from('events')
-          .select('id, title, slug, location_name, address_city, event_date, flyer_image_url, ticket_price, ticket_url')
+          .select('id, title, slug, location_name, address_city, event_date, flyer_image_url, ticket_price, ticket_url, status')
+          .gte('event_date', now)
+          .neq('status', 'cancelled')
           .order('event_date', { ascending: true })
           .limit(3);
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { getR2Url } from '@/lib/utils';
+import { getR2Url, getEmbedUrl, parseVideoUrls } from '@/lib/utils';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import {
@@ -91,12 +91,7 @@ interface ProjectView {
   documents: ProjectDocument[];
 }
 
-function getEmbedUrl(url: string) {
-  if (url.includes('youtube.com/watch?v=')) {
-    return url.replace('watch?v=', 'embed/');
-  }
-  return url;
-}
+
 
 export default function ProjectDetailClient() {
   const params = useParams();
@@ -157,24 +152,38 @@ export default function ProjectDetailClient() {
           }));
 
           // Build lightbox slides
-          const allSlides = galleries.reduce((acc: any[], gallery: any) => {
-            if (gallery.media_items) {
-              const slides = gallery.media_items.map((item: any) => {
-                if (item.type === 'video') {
-                  return {
-                    src: item.url,
-                    alt: item.caption || 'Video',
-                    _type: 'youtube' as const,
-                    embedUrl: getEmbedUrl(item.url),
-                  };
-                }
-                return { src: item.url, alt: item.caption || 'Foto' };
-              });
-              return [...acc, ...slides];
-            }
-            return acc;
-          }, []);
-          setLightboxSlides(allSlides);
+          const projectVideoUrls = parseVideoUrls(dbProject.main_video_url);
+          const projectVideoSlides = projectVideoUrls.map((url, i) => {
+            const embedUrl = getEmbedUrl(url);
+            let videoId = '';
+            const match = embedUrl.match(/embed\/([a-zA-Z0-9_-]+)/);
+            if (match) videoId = match[1];
+            const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+
+            return {
+              src: thumbUrl || url,
+              embedUrl: embedUrl.includes('?') ? `${embedUrl}&autoplay=1` : `${embedUrl}?autoplay=1`,
+              alt: `Video ${i + 1} - ${dbProject.title}`,
+              _type: 'youtube' as const,
+            };
+          });
+
+          const gallerySlides = galleries.flatMap((gallery: any) =>
+            (gallery.media_items || []).map((item: any) => {
+              if (item.type === 'video') {
+                const embedUrl = getEmbedUrl(item.url);
+                return {
+                  src: item.url,
+                  alt: item.caption || 'Video',
+                  _type: 'youtube' as const,
+                  embedUrl: embedUrl.includes('?') ? `${embedUrl}&autoplay=1` : `${embedUrl}?autoplay=1`,
+                };
+              }
+              return { src: item.url, alt: item.caption || 'Foto' };
+            })
+          );
+
+          setLightboxSlides([...projectVideoSlides, ...gallerySlides]);
 
           // Fetch documents
           const { data: docsData } = await supabase
@@ -437,25 +446,6 @@ export default function ProjectDetailClient() {
       </div>
 
       <div className="px-6">
-      {project.main_video_url && (
-        <div className="w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl border border-white/10 mb-10 relative group">
-          <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-            <p className="text-xs bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full text-white/80 flex items-center gap-2">
-              <PlayCircle className="h-3 w-3" /> El video pausará la música automáticamente
-            </p>
-          </div>
-          <iframe
-            className="w-full h-full"
-            src={getEmbedUrl(project.main_video_url)}
-            title={project.title}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            onLoad={handleVideoPlay}
-          ></iframe>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-6xl">
         <div className="lg:col-span-2 space-y-10">
           <div>
@@ -537,6 +527,63 @@ export default function ProjectDetailClient() {
         </div>
 
         <div className="space-y-8">
+          {(() => {
+            const projectVideoList = parseVideoUrls(project.main_video_url);
+            if (projectVideoList.length === 0) return null;
+
+            return (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/5 pb-2">
+                  <Video className="h-5 w-5 text-primary" /> Videos ({projectVideoList.length})
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {projectVideoList.map((url, index) => {
+                    const embedUrl = getEmbedUrl(url);
+                    let videoId = '';
+                    const match = embedUrl.match(/embed\/([a-zA-Z0-9_-]+)/);
+                    if (match) videoId = match[1];
+                    const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          setLightboxIndex(index);
+                          setLightboxOpen(true);
+                        }}
+                        className="group relative aspect-video rounded-xl overflow-hidden bg-black/40 border border-white/10 hover:border-primary/50 transition-all cursor-pointer shadow-lg"
+                      >
+                        {thumbUrl ? (
+                          <img
+                            src={thumbUrl}
+                            alt={`Video ${index + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                            <Video className="w-8 h-8 text-white/30" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-primary/90 group-hover:bg-primary text-black flex items-center justify-center transform group-hover:scale-110 transition-transform shadow-xl">
+                            <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-2 left-2 right-2 px-2.5 py-1.5 rounded-md bg-black/75 backdrop-blur-md border border-white/10 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-white/90 truncate">
+                            {projectVideoList.length > 1 ? `Video ${index + 1}` : 'Ver Video'}
+                          </span>
+                          <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                            Reproducir <PlayCircle className="w-3.5 h-3.5" />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
           {project.galleries.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/5 pb-2">
@@ -616,9 +663,18 @@ export default function ProjectDetailClient() {
         slides={lightboxSlides}
         styles={{ container: { backgroundColor: 'rgba(0, 0, 0, 0.95)' } }}
         render={{
-          slide: ({ slide }) => {
+          slide: ({ slide, offset }) => {
             const s = slide as any;
             if ('_type' in s && s._type === 'youtube') {
+              if (offset !== 0) {
+                return (
+                  <div className="flex h-full w-full items-center justify-center p-4 md:p-8">
+                    <div className="aspect-video w-full max-w-5xl rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center">
+                      <Play className="w-10 h-10 text-white/30" />
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div className="flex h-full w-full items-center justify-center p-4 md:p-8">
                   <iframe

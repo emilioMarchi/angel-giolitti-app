@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS events (
   flyer_image_url TEXT,
   ticket_url TEXT,
   ticket_price NUMERIC(10,2), -- Precio de entrada en pesos argentinos
+  whatsapp_number TEXT, -- Número de WhatsApp opcional para consultas de este evento específico
   is_featured BOOLEAN DEFAULT FALSE,
   status TEXT CHECK (status IN ('upcoming', 'completed')) DEFAULT 'upcoming',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

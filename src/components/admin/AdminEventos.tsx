@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Calendar, Loader2, AlertCircle, ArrowLeft, Star, MapPin, Clock } from 'lucide-react';
 import FileUploadZone from './FileUploadZone';
+import Pagination from './Pagination';
 
 interface Event {
   id: string;
@@ -17,6 +18,7 @@ interface Event {
   flyer_image_url: string;
   ticket_url: string;
   ticket_price: number | null;
+  whatsapp_number?: string;
   is_featured: boolean;
   status: 'upcoming' | 'completed';
 }
@@ -25,6 +27,8 @@ export default function AdminEventos() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'list' | 'form'>('list');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [title, setTitle] = useState('');
@@ -35,6 +39,7 @@ export default function AdminEventos() {
   const [eventDate, setEventDate] = useState('');
   const [ticketUrl, setTicketUrl] = useState('');
   const [ticketPrice, setTicketPrice] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [status, setStatus] = useState<'upcoming' | 'completed'>('upcoming');
   const [flyerUrl, setFlyerUrl] = useState('');
@@ -199,6 +204,7 @@ export default function AdminEventos() {
     setEventDate('');
     setTicketUrl('');
     setTicketPrice('');
+    setWhatsappNumber('');
     setIsFeatured(false);
     setStatus('upcoming');
     setFlyerUrl('');
@@ -217,6 +223,7 @@ export default function AdminEventos() {
     setEventDate(formatDatetimeForInput(event.event_date));
     setTicketUrl(event.ticket_url || '');
     setTicketPrice(event.ticket_price != null ? String(event.ticket_price) : '');
+    setWhatsappNumber(event.whatsapp_number || '');
     setIsFeatured(event.is_featured || false);
     setStatus(event.status || 'upcoming');
     setFlyerUrl(event.flyer_image_url || '');
@@ -244,7 +251,7 @@ export default function AdminEventos() {
       const isoDate = new Date(eventDate).toISOString();
       const slugValue = `${generateSlug(title)}-${new Date(eventDate).getFullYear()}-${new Date(eventDate).getMonth() + 1}`;
 
-      const eventData = {
+      const eventData: any = {
         title,
         slug: slugValue,
         description,
@@ -259,17 +266,38 @@ export default function AdminEventos() {
         status,
       };
 
+      if (whatsappNumber.trim()) {
+        eventData.whatsapp_number = whatsappNumber.trim();
+      }
+
       if (selectedEvent) {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('events')
           .update(eventData)
           .eq('id', selectedEvent.id);
 
+        if (error && error.message?.includes('whatsapp_number')) {
+          delete eventData.whatsapp_number;
+          const retry = await supabase
+            .from('events')
+            .update(eventData)
+            .eq('id', selectedEvent.id);
+          error = retry.error;
+        }
+
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('events')
           .insert([eventData]);
+
+        if (error && error.message?.includes('whatsapp_number')) {
+          delete eventData.whatsapp_number;
+          const retry = await supabase
+            .from('events')
+            .insert([eventData]);
+          error = retry.error;
+        }
 
         if (error) throw error;
       }
@@ -277,8 +305,9 @@ export default function AdminEventos() {
       await fetchEvents();
       setView('list');
     } catch (err: any) {
-      console.error('Error saving event:', err);
-      setErrorMessage(err.message || 'Error al guardar el evento.');
+      console.error('Error saving event:', err?.message || err?.details || JSON.stringify(err), err);
+      const msg = err?.message || err?.details || err?.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      setErrorMessage(msg !== '{}' ? msg : 'Error al guardar el evento en la base de datos.');
     } finally {
       setSaving(false);
     }
@@ -421,7 +450,14 @@ export default function AdminEventos() {
                     <h2 className="text-xs font-semibold text-white/30 uppercase tracking-wider">Próximos</h2>
                     <span className="text-[10px] bg-emerald-500/10 text-emerald-400/70 px-2 py-0.5 rounded-full font-medium">{upcomingEvents.length}</span>
                   </div>
-                  {renderEventTable(upcomingEvents)}
+                  {renderEventTable(upcomingEvents.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE))}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(upcomingEvents.length / PAGE_SIZE)}
+                    totalItems={upcomingEvents.length}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={page => setCurrentPage(page)}
+                  />
                 </div>
               )}
 
@@ -556,6 +592,20 @@ export default function AdminEventos() {
                 />
                 <p className="text-[10px] text-white/20">
                   Dejalo vacío si es entrada gratuita o el precio se anuncia en puerta.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-white/50">Número de WhatsApp (Opcional para este evento)</label>
+                <input
+                  type="text"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="Ej: 5491112345678"
+                  className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
+                />
+                <p className="text-[10px] text-white/20">
+                  Si se completa, el botón de consulta enviará mensaje a este número. Si se deja vacío, usará el teléfono por defecto del artista.
                 </p>
               </div>
 

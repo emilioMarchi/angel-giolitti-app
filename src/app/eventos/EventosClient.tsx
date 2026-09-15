@@ -18,6 +18,7 @@ interface EventData {
   flyer_image_url: string;
   ticket_url: string;
   ticket_price: number | null;
+  whatsapp_number?: string | null;
   is_featured: boolean;
   status?: 'upcoming' | 'completed';
 }
@@ -30,8 +31,21 @@ export default function EventosClient({ initialSlug }: Props) {
   const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [defaultWhatsapp, setDefaultWhatsapp] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [flyerPreview, setFlyerPreview] = useState(false);
+
+  useEffect(() => {
+    async function fetchArtistWhatsapp() {
+      try {
+        const { data } = await supabase.from('artist_profile').select('social_links').maybeSingle();
+        if (data?.social_links?.whatsapp) {
+          setDefaultWhatsapp(data.social_links.whatsapp.replace(/\D/g, ''));
+        }
+      } catch {}
+    }
+    fetchArtistWhatsapp();
+  }, []);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -40,7 +54,7 @@ export default function EventosClient({ initialSlug }: Props) {
         const { data, error } = await supabase
           .from('events')
           .select('*')
-          .order('event_date', { ascending: true }); // Orden ascendente para próximos
+          .order('event_date', { ascending: true });
 
         if (!error && data) {
           setEvents(data as EventData[]);
@@ -50,7 +64,7 @@ export default function EventosClient({ initialSlug }: Props) {
           }
         }
       } catch (err) {
-        console.error('Error fetching events, using mocks:', err);
+        console.error('Error fetching events:', err);
       } finally {
         setLoading(false);
       }
@@ -208,16 +222,24 @@ export default function EventosClient({ initialSlug }: Props) {
               )}
               
               {/* Botón WhatsApp en detalle */}
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Me interesa el evento: ${selectedEvent.title} el ${getFullDateString(selectedEvent.event_date)} en ${selectedEvent.location_name}, ${selectedEvent.address_city}. ¿Me das más info?`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 text-white font-bold text-sm hover:bg-green-500 transition-colors"
-                aria-label={`Compartir evento ${selectedEvent.title} por WhatsApp`}
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                <span>WhatsApp</span>
-              </a>
+              {(() => {
+                const targetPhone = selectedEvent.whatsapp_number ? selectedEvent.whatsapp_number.replace(/\D/g, '') : defaultWhatsapp;
+                const message = encodeURIComponent(`¡Hola! Me interesa el evento: ${selectedEvent.title} el ${getFullDateString(selectedEvent.event_date)} en ${selectedEvent.location_name}, ${selectedEvent.address_city}. ¿Me das más info?`);
+                const waUrl = targetPhone ? `https://wa.me/${targetPhone}?text=${message}` : `https://wa.me/?text=${message}`;
+
+                return (
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 rounded-full bg-green-600 text-white font-bold text-sm hover:bg-green-500 transition-colors"
+                    aria-label={`Consultar evento ${selectedEvent.title} por WhatsApp`}
+                  >
+                    <WhatsAppIcon className="h-4 w-4" />
+                    <span>WhatsApp</span>
+                  </a>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -267,79 +289,85 @@ export default function EventosClient({ initialSlug }: Props) {
         
         {upcomingEvents.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {upcomingEvents.map(event => (
-              <div 
-                key={event.id}
-                onClick={() => router.push(`/eventos/${event.slug}`)}
-                className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5"
-              >
-                {/* Flyer thumbnail */}
-                <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative bg-zinc-800 group-hover:scale-105 transition-transform duration-300">
-                  {event.flyer_image_url ? (
-                    <img src={event.flyer_image_url} alt={event.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-muted-foreground/40" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+            {upcomingEvents.map(event => {
+              const targetPhone = event.whatsapp_number ? event.whatsapp_number.replace(/\D/g, '') : defaultWhatsapp;
+              const message = encodeURIComponent(`¡Hola! Me interesa el evento: ${event.title} el ${getFullDateString(event.event_date)} en ${event.location_name}, ${event.address_city}. ¿Me das más info?`);
+              const waUrl = targetPhone ? `https://wa.me/${targetPhone}?text=${message}` : `https://wa.me/?text=${message}`;
 
-                {/* Info principal de la fila */}
-                <div className="flex-1 min-w-0 flex flex-col pr-2">
-                  <h3 className="text-lg font-bold text-white line-clamp-2 group-hover:text-primary transition-colors">
-                    {event.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <span className="font-semibold text-white/80">{event.location_name}</span>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="truncate">{event.address_city}</span>
+              return (
+                <div 
+                  key={event.id}
+                  onClick={() => router.push(`/eventos/${event.slug}`)}
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  {/* Flyer thumbnail */}
+                  <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative bg-zinc-800 group-hover:scale-105 transition-transform duration-300">
+                    {event.flyer_image_url ? (
+                      <img src={event.flyer_image_url} alt={event.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Calendar className="h-6 w-6 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      {getDay(event.event_date)} {getMonthShort(event.event_date)} · {getTimeString(event.event_date)} hs
-                    </span>
-                    {formatPrice(event.ticket_price) && (
-                      <span className="flex items-center gap-1 text-primary font-semibold">
-                        {formatPrice(event.ticket_price)}
+
+                  {/* Info principal de la fila */}
+                  <div className="flex-1 min-w-0 flex flex-col pr-2">
+                    <h3 className="text-lg font-bold text-white line-clamp-2 group-hover:text-primary transition-colors">
+                      {event.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      <span className="font-semibold text-white/80">{event.location_name}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="truncate">{event.address_city}</span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        {getDay(event.event_date)} {getMonthShort(event.event_date)} · {getTimeString(event.event_date)} hs
+                      </span>
+                      {formatPrice(event.ticket_price) && (
+                        <span className="flex items-center gap-1 text-primary font-semibold">
+                          {formatPrice(event.ticket_price)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acciones derechas en la fila */}
+                  <div className="flex items-center gap-4 mt-3 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
+                    {event.ticket_url ? (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(event.ticket_url, '_blank');
+                        }}
+                        className="px-5 py-2 rounded-full border border-white/30 text-white text-xs font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
+                      >
+                        <Ticket className="h-3.5 w-3.5" /> Tickets
+                      </button>
+                    ) : (
+                      <span className="px-5 py-2 rounded-full border border-transparent text-muted-foreground text-xs font-bold uppercase tracking-widest">
+                        Más info
                       </span>
                     )}
+
+                    {/* Botón WhatsApp */}
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-600 text-white text-xs font-bold hover:bg-green-500 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Consultar evento ${event.title} por WhatsApp`}
+                    >
+                      <WhatsAppIcon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">WhatsApp</span>
+                    </a>
                   </div>
                 </div>
-
-                {/* Acciones derechas en la fila */}
-                <div className="flex items-center gap-4 mt-3 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
-                  {event.ticket_url ? (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(event.ticket_url, '_blank');
-                      }}
-                      className="px-5 py-2 rounded-full border border-white/30 text-white text-xs font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
-                    >
-                      <Ticket className="h-3.5 w-3.5" /> Tickets
-                    </button>
-                  ) : (
-                    <span className="px-5 py-2 rounded-full border border-transparent text-muted-foreground text-xs font-bold uppercase tracking-widest">
-                      Más info
-                    </span>
-                  )}
-
-                  {/* Botón WhatsApp */}
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Me interesa el evento: ${event.title} el ${getFullDateString(event.event_date)} en ${event.location_name}, ${event.address_city}. ¿Me das más info?`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-600 text-white text-xs font-bold hover:bg-green-500 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Compartir evento ${event.title} por WhatsApp`}
-                  >
-                    <WhatsAppIcon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </a>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="p-8 rounded-lg border border-dashed border-white/10 text-center text-muted-foreground">

@@ -11,7 +11,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const pathname = usePathname();
   
   if (pathname?.startsWith('/admin')) {
-    return <div className="h-full w-full">{children}</div>;
+    return <div className="fixed inset-0 overflow-hidden">{children}</div>;
   }
 
   return (

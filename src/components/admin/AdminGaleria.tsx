@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Loader2, Upload, AlertCircle, ArrowLeft, FolderOpen, Image as ImageIcon } from 'lucide-react';
 import FileUploadZone from './FileUploadZone';
+import Pagination from './Pagination';
 
 interface MediaAlbum {
   id: string;
@@ -33,6 +34,8 @@ export default function AdminGaleria() {
   const [selectedAlbum, setSelectedAlbum] = useState<MediaAlbum | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 4;
 
   const [albumTitle, setAlbumTitle] = useState('');
   const [albumDesc, setAlbumDesc] = useState('');
@@ -254,45 +257,56 @@ export default function AdminGaleria() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {albums.map(album => (
-                <div key={album.id} className="group rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-colors overflow-hidden flex flex-col">
-                  <div className="aspect-[4/3] relative bg-white/[0.02] overflow-hidden flex items-center justify-center border-b border-white/[0.04]">
-                    {album.cover_image_url ? (
-                      <img src={album.cover_image_url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-white/10" />
-                    )}
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h3 className="font-medium text-sm text-white/80 line-clamp-1">{album.title}</h3>
-                      {album.description && <p className="text-xs text-white/40 mt-1 line-clamp-2">{album.description}</p>}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {albums
+                  .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                  .map(album => (
+                  <div key={album.id} className="group rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-colors overflow-hidden flex flex-col">
+                    <div className="aspect-[4/3] relative bg-white/[0.02] overflow-hidden flex items-center justify-center border-b border-white/[0.04]">
+                      {album.cover_image_url ? (
+                        <img src={album.cover_image_url} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-white/10" />
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 pt-2">
-                      <button
-                        onClick={() => handleOpenPhotos(album)}
-                        className="flex-1 py-1.5 px-2 flex items-center justify-center gap-1.5 text-[10px] font-medium rounded-md bg-white/[0.06] text-white/50 hover:bg-white/[0.1] hover:text-white/70 transition-all cursor-pointer"
-                      >
-                        <FolderOpen className="w-3 h-3" />
-                        Ver Fotos
-                      </button>
-                      <button
-                        onClick={() => handleEditAlbum(album)}
-                        className="p-1.5 rounded-md text-white/25 hover:bg-white/[0.06] hover:text-white/50 transition-all cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAlbum(album.id)}
-                        className="p-1.5 rounded-md text-white/25 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <h3 className="font-medium text-sm text-white/80 line-clamp-1">{album.title}</h3>
+                        {album.description && <p className="text-xs text-white/40 mt-1 line-clamp-2">{album.description}</p>}
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-2">
+                        <button
+                          onClick={() => handleOpenPhotos(album)}
+                          className="flex-1 py-1.5 px-2 flex items-center justify-center gap-1.5 text-[10px] font-medium rounded-md bg-white/[0.06] text-white/50 hover:bg-white/[0.1] hover:text-white/70 transition-all cursor-pointer"
+                        >
+                          <FolderOpen className="w-3 h-3" />
+                          Ver Fotos
+                        </button>
+                        <button
+                          onClick={() => handleEditAlbum(album)}
+                          className="p-1.5 rounded-md text-white/25 hover:bg-white/[0.06] hover:text-white/50 transition-all cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAlbum(album.id)}
+                          className="p-1.5 rounded-md text-white/25 hover:bg-red-500/10 hover:text-red-400 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(albums.length / PAGE_SIZE)}
+                totalItems={albums.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={page => setCurrentPage(page)}
+              />
             </div>
           )}
         </div>

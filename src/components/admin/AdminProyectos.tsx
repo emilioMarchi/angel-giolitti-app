@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { parseVideoUrls, getEmbedUrl } from '@/lib/utils';
 import { Plus, Edit2, Trash2, Video, Loader2, AlertCircle, ArrowLeft, ExternalLink } from 'lucide-react';
 import FileUploadZone from './FileUploadZone';
+import Pagination from './Pagination';
 
 interface Project {
   id: string;
@@ -12,6 +14,7 @@ interface Project {
   category: string;
   creation_year: number;
   end_year: number | null;
+  profile_image_url: string;
   cover_image_url: string;
   summary: string;
   main_video_url: string;
@@ -36,15 +39,37 @@ export default function AdminProyectos() {
   const [selected, setSelected] = useState<Project | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 5;
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('videoclip');
   const [creationYear, setCreationYear] = useState<number>(new Date().getFullYear());
   const [endYear, setEndYear] = useState('');
   const [summary, setSummary] = useState('');
-  const [mainVideoUrl, setMainVideoUrl] = useState('');
+  const [videoUrls, setVideoUrls] = useState<string[]>(['']);
+  const [profileUrl, setProfileUrl] = useState('');
+  const [profileFile, setProfileFile] = useState<File | null>(null);
   const [coverUrl, setCoverUrl] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
+
+  const handleVideoUrlChange = (index: number, val: string) => {
+    const updated = [...videoUrls];
+    updated[index] = val;
+    setVideoUrls(updated);
+  };
+
+  const handleAddVideoUrl = () => {
+    setVideoUrls([...videoUrls, '']);
+  };
+
+  const handleRemoveVideoUrl = (index: number) => {
+    if (videoUrls.length === 1) {
+      setVideoUrls(['']);
+    } else {
+      setVideoUrls(videoUrls.filter((_, i) => i !== index));
+    }
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -100,16 +125,15 @@ export default function AdminProyectos() {
       .replace(/[^\w-]+/g, '').replace(/--+/g, '-')
       .replace(/^-+/, '').replace(/-+$/, '');
 
-  const compressImage = (file: File): Promise<Blob> =>
+  const compressImage = (file: File, maxW = 900, maxH = 500): Promise<Blob> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const MAX_W = 900, MAX_H = 500;
           let w = img.width, h = img.height;
-          if (w / h > MAX_W / MAX_H) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-          else { w = Math.round(w * MAX_H / h); h = MAX_H; }
+          if (w / h > maxW / maxH) { h = Math.round(h * maxW / w); w = maxW; }
+          else { w = Math.round(w * maxH / h); h = maxH; }
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
@@ -143,7 +167,9 @@ export default function AdminProyectos() {
   const handleNew = () => {
     setSelected(null); setTitle(''); setCategory('videoclip');
     setCreationYear(new Date().getFullYear()); setEndYear('');
-    setSummary(''); setMainVideoUrl(''); setCoverUrl(''); setCoverFile(null);
+    setSummary(''); setVideoUrls(['']);
+    setProfileUrl(''); setProfileFile(null);
+    setCoverUrl(''); setCoverFile(null);
     setLinkedAlbumIds([]); setLinkedGalleryIds([]);
     setErrorMessage(''); setView('form');
   };
@@ -151,7 +177,10 @@ export default function AdminProyectos() {
   const handleEdit = async (p: Project) => {
     setSelected(p); setTitle(p.title); setCategory(p.category || 'videoclip');
     setCreationYear(p.creation_year); setEndYear(p.end_year?.toString() || '');
-    setSummary(p.summary || ''); setMainVideoUrl(p.main_video_url || '');
+    setSummary(p.summary || '');
+    const parsedVids = parseVideoUrls(p.main_video_url);
+    setVideoUrls(parsedVids.length > 0 ? parsedVids : ['']);
+    setProfileUrl(p.profile_image_url || ''); setProfileFile(null);
     setCoverUrl(p.cover_image_url || ''); setCoverFile(null);
     const [albumsRes, galleryRes] = await Promise.all([
       supabase.from('albums').select('id').eq('project_id', p.id),
@@ -166,15 +195,27 @@ export default function AdminProyectos() {
     e.preventDefault();
     setSaving(true); setErrorMessage('');
     try {
+      let finalProfileUrl = profileUrl;
+      if (profileFile) {
+        const blob = await compressImage(profileFile, 600, 600);
+        finalProfileUrl = await uploadToR2(blob, `${generateSlug(title)}-profile.webp`, 'project-profiles');
+      }
+
       let finalCoverUrl = coverUrl;
       if (coverFile) {
-        const blob = await compressImage(coverFile);
+        const blob = await compressImage(coverFile, 1200, 675);
         finalCoverUrl = await uploadToR2(blob, `${generateSlug(title)}-cover.webp`, 'project-covers');
       }
+
+      const cleanVideos = videoUrls.map(v => v.trim()).filter(Boolean);
+      const finalMainVideoUrl = cleanVideos.join('\n');
+
       const data = {
         title, slug: generateSlug(title), category, creation_year: creationYear,
         end_year: endYear ? parseInt(endYear) : null,
-        summary, main_video_url: mainVideoUrl, cover_image_url: finalCoverUrl,
+        summary, main_video_url: finalMainVideoUrl,
+        profile_image_url: finalProfileUrl,
+        cover_image_url: finalCoverUrl,
       };
       let projectId = selected?.id || '';
       if (selected) {
@@ -278,14 +319,16 @@ export default function AdminProyectos() {
                     </tr>
                   </thead>
                   <tbody>
-                    {projects.map((project) => (
+                    {projects
+                      .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                      .map((project) => (
                       <tr key={project.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            {project.cover_image_url ? (
-                              <img src={project.cover_image_url} alt="" className="w-10 h-6 rounded object-cover shrink-0" />
+                            {project.profile_image_url || project.cover_image_url ? (
+                              <img src={project.profile_image_url || project.cover_image_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10" />
                             ) : (
-                              <div className="w-10 h-6 rounded bg-white/[0.04] flex items-center justify-center shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0 border border-white/10">
                                 <Video className="w-3.5 h-3.5 text-white/15" />
                               </div>
                             )}
@@ -305,16 +348,6 @@ export default function AdminProyectos() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
-                            {project.main_video_url && (
-                              <a
-                                href={project.main_video_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded-md text-white/25 hover:bg-white/[0.06] hover:text-white/50 transition-all cursor-pointer"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
                             <button
                               onClick={() => handleEdit(project)}
                               className="p-1.5 rounded-md text-white/25 hover:bg-white/[0.06] hover:text-white/50 transition-all cursor-pointer"
@@ -333,6 +366,15 @@ export default function AdminProyectos() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="p-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(projects.length / PAGE_SIZE)}
+                  totalItems={projects.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={page => setCurrentPage(page)}
+                />
               </div>
             </div>
           )}
@@ -385,10 +427,54 @@ export default function AdminProyectos() {
                   className="w-full min-h-20 px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/70 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors resize-y" />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-white/50">URL de Video Principal (YouTube / Vimeo)</label>
-                <input type="url" value={mainVideoUrl} onChange={e => setMainVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..."
-                  className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-white/50">Videos del Proyecto (YouTube / Vimeo)</label>
+                  <button
+                    type="button"
+                    onClick={handleAddVideoUrl}
+                    className="text-[11px] text-white/60 hover:text-white flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar otro video
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {videoUrls.map((url, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={e => handleVideoUrlChange(idx, e.target.value)}
+                        placeholder="https://youtube.com/watch?v=... o https://youtu.be/..."
+                        className="flex-1 px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
+                      />
+                      {url.trim() && (
+                        <a
+                          href={url.trim().startsWith('http://') || url.trim().startsWith('https://') ? url.trim() : `https://${url.trim()}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all cursor-pointer"
+                          title="Abrir video en nueva pestaña"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                      {videoUrls.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVideoUrl(idx)}
+                          className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                          title="Eliminar este video"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-white/25">
+                  Soporta URLs directas (<code className="text-white/40">youtube.com/watch?v=...</code>) y links de compartir (<code className="text-white/40">youtu.be/...</code>).
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -445,6 +531,31 @@ export default function AdminProyectos() {
                   </div>
                 )}
                 <p className="text-[10px] text-white/20">Asocia los álbumes fotográficos de este proyecto.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/50 block">Foto de Perfil / Logo del Proyecto</label>
+                <div className="flex flex-col md:flex-row items-stretch gap-4">
+                  <div className="w-20 h-20 bg-white/[0.03] rounded-full overflow-hidden flex items-center justify-center border border-white/[0.06] shrink-0 mx-auto md:mx-0">
+                    {profileFile ? (
+                      <img src={URL.createObjectURL(profileFile)} alt="Preview Perfil" className="w-full h-full object-cover" />
+                    ) : profileUrl ? (
+                      <img src={profileUrl} alt="Perfil actual" className="w-full h-full object-cover" />
+                    ) : (
+                      <Video className="w-6 h-6 text-white/10" />
+                    )}
+                  </div>
+                  <div className="flex-1 w-full">
+                    <FileUploadZone
+                      accept="image/*"
+                      type="image"
+                      selectedFile={profileFile}
+                      onFileSelect={file => setProfileFile(file)}
+                      placeholderText="Haz clic o arrastra la foto de perfil del proyecto"
+                      helperText="Formato recomendado: 1:1 (cuadrada/avatar). Se optimizará automáticamente."
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
