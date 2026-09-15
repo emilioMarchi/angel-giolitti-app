@@ -277,6 +277,7 @@ export default function AdminMusica() {
     setAlbumProjectId(album.project_id || '');
     setCoverFile(null);
     setErrorMessage('');
+    fetchTracks(album.id);
     setView('album-form');
   };
 
@@ -722,33 +723,6 @@ export default function AdminMusica() {
                   </div>
                 </div>
               </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-white/[0.06]">
-                <button
-                  type="button"
-                  onClick={() => setView('list')}
-                  disabled={savingAlbum}
-                  className="px-4 py-2 text-xs font-medium rounded-lg text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-all cursor-pointer disabled:opacity-40"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingAlbum}
-                  className="px-4 py-2 text-xs font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
-                >
-                  {savingAlbum ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    'Guardar Lanzamiento'
-                  )}
-                </button>
-              </div>
-            </form>
-
             {selectedAlbum && (
               <div className="pt-5 border-t border-white/[0.06] space-y-4">
                 <div className="flex items-center gap-2">
@@ -872,8 +846,32 @@ export default function AdminMusica() {
                     </div>
                   </div>
                 </div>
+</div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => setView('list')}
+                  disabled={savingAlbum}
+                  className="px-4 py-2 text-xs font-medium rounded-lg text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-all cursor-pointer disabled:opacity-40"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingAlbum}
+                  className="px-4 py-2 text-xs font-medium rounded-lg bg-white text-black hover:bg-white/90 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
+                >
+                  {savingAlbum ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Lanzamiento'
+                  )}
+                </button>
               </div>
-            )}
 
             {!selectedAlbum && (
               <div className="pt-5 border-t border-white/[0.06]">
