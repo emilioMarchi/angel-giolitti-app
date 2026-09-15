@@ -364,7 +364,7 @@ export default function ProjectDetailClient() {
             {project.end_year && (
               <>
                 <span>—</span>
-                <span>{project.slug === 'handangel' ? 'Actualidad' : project.end_year}</span>
+                <span>{project.category === 'actual' ? 'Actualidad' : project.end_year}</span>
               </>
             )}
           </div>

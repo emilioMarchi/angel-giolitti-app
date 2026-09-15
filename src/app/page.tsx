@@ -16,6 +16,7 @@ interface AlbumDB {
   type: 'album' | 'ep' | 'single';
   release_year: number;
   cover_url: string | null;
+  project: { category: string | null; end_year: number | null } | null;
 }
 
 interface TrackDB {
@@ -149,12 +150,23 @@ export default function HomePage() {
         // 2. Últimos 5 álbumes
         const { data: albumsData } = await supabase
           .from('albums')
-          .select('id, title, slug, type, release_year, cover_url')
+          .select('id, title, slug, type, release_year, cover_url, project:projects(category, end_year)')
           .order('release_year', { ascending: false })
           .limit(5);
 
         if (albumsData && albumsData.length > 0) {
-          setDiscography(albumsData as AlbumDB[]);
+          const raw = albumsData as any[];
+          const sorted = raw.sort((a, b) => {
+            const aActual = a.project?.category === 'actual' ? 1 : 0;
+            const bActual = b.project?.category === 'actual' ? 1 : 0;
+            if (bActual !== aActual) return bActual - aActual;
+            if (b.release_year !== a.release_year) return b.release_year - a.release_year;
+            const endA = a.project?.end_year ?? -1;
+            const endB = b.project?.end_year ?? -1;
+            if (endB !== endA) return endB - endA;
+            return 0;
+          });
+          setDiscography(sorted.slice(0, 5) as AlbumDB[]);
         }
 
         // 3. Próximos 3 eventos (solo futuros, no cancelados)

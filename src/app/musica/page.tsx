@@ -28,7 +28,7 @@ interface AlbumDB {
   cover_url: string | null;
   description: string | null;
   members: unknown[];
-  project: { title: string; members: Array<{ name: string; roll: string[] }> } | null;
+  project: { title: string; category: string | null; creation_year: number; end_year: number | null; members: Array<{ name: string; roll: string[] }> } | null;
   created_at: string;
   tracks?: TrackDB[];
 }
@@ -84,6 +84,9 @@ interface AlbumView {
   cover_url: string | null;
   description: string | null;
   project_title: string | null;
+  project_category: string | null;
+  project_creation_year: number | null;
+  project_end_year: number | null;
   members: Array<{ name: string; roll: string[] }>;
   tracks: Track[];
 }
@@ -124,6 +127,9 @@ function mapAlbumToView(dbAlbum: AlbumDB): AlbumView {
     cover_url: getR2Url(dbAlbum.cover_url),
     description: dbAlbum.description,
     project_title: dbAlbum.project?.title || null,
+    project_category: dbAlbum.project?.category ?? null,
+    project_creation_year: dbAlbum.project?.creation_year ?? null,
+    project_end_year: dbAlbum.project?.end_year ?? null,
     members,
     tracks,
   };
@@ -170,11 +176,23 @@ export default function MusicaPage() {
         setLoading(true);
         const { data: dbAlbums, error: albumsError } = await supabase
           .from('albums')
-          .select('*, tracks(*), project:projects(title, members)')
+          .select('*, tracks(*), project:projects(title, category, creation_year, end_year, members)')
           .order('release_year', { ascending: false });
 
         if (!albumsError && dbAlbums && dbAlbums.length > 0) {
           const mapped = (dbAlbums as AlbumDB[]).map(mapAlbumToView);
+          mapped.sort((a, b) => {
+            const aActual = a.project_category === 'actual' ? 1 : 0;
+            const bActual = b.project_category === 'actual' ? 1 : 0;
+            if (bActual !== aActual) return bActual - aActual;
+            if (b.release_year !== a.release_year) return b.release_year - a.release_year;
+            const endA = a.project_end_year ?? -1;
+            const endB = b.project_end_year ?? -1;
+            if (endB !== endA) return endB - endA;
+            const yearA = a.project_creation_year ?? 0;
+            const yearB = b.project_creation_year ?? 0;
+            return yearB - yearA;
+          });
           setAlbums(mapped);
         }
 

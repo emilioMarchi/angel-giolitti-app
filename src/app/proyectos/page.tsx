@@ -105,6 +105,9 @@ export default function ProyectosPage() {
             profile_image_url: getR2Url(p.profile_image_url)
           }));
           sanitized.sort((a: any, b: any) => {
+            const aActual = a.category === 'actual' ? 1 : 0;
+            const bActual = b.category === 'actual' ? 1 : 0;
+            if (bActual !== aActual) return bActual - aActual;
             const yearA = a.end_year || a.creation_year;
             const yearB = b.end_year || b.creation_year;
             return yearB - yearA;
@@ -217,7 +220,7 @@ export default function ProyectosPage() {
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
                   {project.end_year ? (
-                    <>{project.creation_year} — {project.slug === 'handangel' ? 'Actualidad' : project.end_year}</>
+                    <>{project.creation_year} — {project.category === 'actual' ? 'Actualidad' : project.end_year}</>
                   ) : (
                     project.creation_year
                   )}

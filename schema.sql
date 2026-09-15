@@ -210,15 +210,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION increment_track_like(target_track_id UUID)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE tracks
-  SET likes_count = likes_count + 1
-  WHERE id = target_track_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION decrement_track_like(target_track_id UUID)
 RETURNS VOID AS $$
 BEGIN
@@ -396,7 +387,25 @@ CREATE POLICY "Admin total playlist_tracks" ON playlist_tracks FOR ALL TO authen
 DROP POLICY IF EXISTS "Admin total page_views" ON page_views;
 CREATE POLICY "Admin total page_views" ON page_views FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'admin@admin.com') WITH CHECK (auth.jwt() ->> 'email' = 'admin@admin.com');
 
-
--- FUNCIONES RPC ATÓMICAS (PLAYS & LIKES)
-
+-- PERMISOS DE EJECUCIÓN PARA RPCs (público + autenticado)
+GRANT EXECUTE ON FUNCTION increment_track_play(UUID) TO anon;
+GRANT EXECUTE ON FUNCTION increment_track_play(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_popular_tracks(INT) TO anon;
+GRANT EXECUTE ON FUNCTION get_popular_tracks(INT) TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_track_like(UUID) TO anon;
+GRANT EXECUTE ON FUNCTION increment_track_like(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION decrement_track_like(UUID) TO anon;
+GRANT EXECUTE ON FUNCTION decrement_track_like(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_artist_follow() TO anon;
+GRANT EXECUTE ON FUNCTION increment_artist_follow() TO authenticated;
+GRANT EXECUTE ON FUNCTION decrement_artist_follow() TO anon;
+GRANT EXECUTE ON FUNCTION decrement_artist_follow() TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_artist_listener() TO anon;
+GRANT EXECUTE ON FUNCTION increment_artist_listener() TO authenticated;
+GRANT EXECUTE ON FUNCTION increment_page_view(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION increment_page_view(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_artist_metrics() TO anon;
+GRANT EXECUTE ON FUNCTION get_artist_metrics() TO authenticated;
+GRANT EXECUTE ON FUNCTION global_search(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION global_search(TEXT) TO authenticated;
 

@@ -104,7 +104,6 @@ Su discografía incluye los álbumes *«Horizonte Infinito»* (2025), *«Ciudad 
 export default function BioPage() {
   const { isPlaying, setPlaying } = usePlayerStore();
   const [profile, setProfile] = useState<ArtistProfile>(mockProfile);
-  const [albums, setAlbums] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -167,30 +166,6 @@ export default function BioPage() {
       }
     }
     fetchProfile();
-  }, []);
-
-  // Fetch albums for discography
-  useEffect(() => {
-    async function fetchAlbums() {
-      try {
-        const { data, error } = await supabase
-          .from('albums')
-          .select('id, title, slug, type, release_year, cover_url')
-          .order('release_year', { ascending: false })
-          .limit(6);
-
-        if (!error && data) {
-          const mapped = data.map((a: any) => ({
-            ...a,
-            cover_url: getR2Url(a.cover_url)
-          }));
-          setAlbums(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching albums for bio:', err);
-      }
-    }
-    fetchAlbums();
   }, []);
 
   // Fetch upcoming events
@@ -307,65 +282,7 @@ export default function BioPage() {
           </div>
         </section>
 
-{/* Discografía Destacada */}
-        <section className="mb-16">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Music className="h-6 w-6 text-primary" />
-              Discografía Destacada
-            </h2>
-            <a href="/musica" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
-              Ver todo <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-          <div className="space-y-3">
-            {albums.length > 0 ? (
-              albums.map((album) => (
-                <Link
-                  key={album.id}
-                  href={`/musica/${album.slug}`}
-                  className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all"
-                >
-                  <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
-                    {album.cover_url ? (
-                      <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <Disc3 className="h-8 w-8 text-primary/30" />
-                    )}
-                    <span className="absolute bottom-1 right-1 text-[10px] font-black uppercase text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
-                      {album.type === 'album' ? 'ÁLBUM' : album.type === 'ep' ? 'EP' : 'SINGLE'}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight">{album.title}</h3>
-                      <p className="text-sm text-muted-foreground">{album.release_year} · {album.type === 'album' ? 'Álbum' : album.type === 'ep' ? 'EP' : 'Single'}</p>
-                    </div>
-                    <button
-                      className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
-                      aria-label="Reproducir"
-                    >
-                      <Play className="h-5 w-5" fill="currentColor" />
-                    </button>
-                  </div>
-                </Link>
-              ))
-) : (
-              [1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="group flex gap-4 p-3 bg-card rounded-xl border border-white/5 animate-pulse">
-                  <div className="w-20 h-20 rounded-lg bg-white/5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0 flex items-center justify-between">
-                    <div>
-                      <div className="h-5 bg-white/5 rounded w-3/4 mb-2" />
-                      <div className="h-4 bg-white/5 rounded w-1/2" />
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+
 
         {/* Próximos Eventos */}
         {events.length > 0 && (
